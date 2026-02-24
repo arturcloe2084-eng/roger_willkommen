@@ -77,100 +77,119 @@ export class GameScene extends Phaser.Scene {
     executeCinematicTransition() {
         // DETENER ANIMACIONES DE FONDO
         if (this.breathingTween) this.breathingTween.stop();
-        this.background.setScale(1); // Estático para precisión de máscara
+        this.background.setScale(1);
+        this.cameras.main.setBackgroundColor(0x000000);
 
         const { width, height } = this.cameras.main;
         const centerX = width / 2;
         const centerY = height / 2;
         const doorX = 538;
+        const doorY = centerY + 10;
+        const panelWidth = 110;
+        const doorHeight = 310;
 
-        // A) CREAR EL INTERIOR
-        this.interior = this.add.image(centerX, centerY, 'interior_hallway')
-            .setDisplaySize(width, height)
-            .setDepth(0);
+        // --- 0. FONDO NEGRO ABSOLUTO (Garantizar que no haya gris) ---
+        this.backdrop = this.add.rectangle(0, 0, width, height, 0x000000)
+            .setOrigin(0).setDepth(2);
 
-        // B) PANELES QUE "CRECEN" (Escala inicial 0)
-        const panelWidth = 110; // Suficiente para tapar la puerta de fondo
-        this.doorPanelLeft = this.add.image(doorX, centerY + 10, 'mechanical_door')
-            .setOrigin(1, 0.5).setDepth(15).setScale(0, 0);
-        this.doorPanelRight = this.add.image(doorX, centerY + 10, 'mechanical_door')
-            .setOrigin(0, 0.5).setDepth(15).setScale(0, 0);
+        // --- 1. PREPARACIÓN DEL INTERIOR ---
+        // Aumentamos el tamaño significativamente para cubrir bordes
+        this.interior = this.add.image(doorX, doorY, 'interior_hallway')
+            .setDepth(5)
+            .setDisplaySize(panelWidth * 2.5, doorHeight * 1.5)
+            .setAlpha(0);
 
-        // D) EJECUTAR ANIMACIÓN POR ETAPAS
-        this.openDoor(doorX, panelWidth);
+        // --- 2. PANELES MECÁNICOS ---
+        this.doorPanelLeft = this.add.image(doorX, doorY, 'mechanical_door')
+            .setOrigin(1, 0.5).setDepth(20).setScale(0, 1.25);
+        this.doorPanelRight = this.add.image(doorX, doorY, 'mechanical_door')
+            .setOrigin(0, 0.5).setDepth(20).setScale(0, 1.25);
+
+        // --- 3. EFECTO DE GLOW / LUZ ---
+        this.doorGlow = this.add.rectangle(doorX, doorY, panelWidth * 2, doorHeight, 0x00ff41, 0.15)
+            .setDepth(6).setAlpha(0);
+
+        // --- 4. EJECUTAR ANIMACIÓN ---
+        this.openDoor(doorX, doorY, panelWidth, doorHeight);
     }
 
-    openDoor(doorX, panelWidth) {
+    openDoor(doorX, doorY, panelWidth, doorHeight) {
         const { width, height } = this.cameras.main;
 
-        // ETAPA 1: CRECIMIENTO (Tapar letrero)
+        // ETAPA 1: LOS PANELES APARECEN
         this.tweens.add({
             targets: [this.doorPanelLeft, this.doorPanelRight],
             scaleX: panelWidth / 128,
-            scaleY: 1.2,
-            duration: 800,
-            ease: 'Back.easeOut',
+            duration: 500,
+            ease: 'Power2.easeOut',
             onComplete: () => {
-                // ETAPA 1.5: HUMO VERDE (Antes de abrir)
-                const greenSmoke = this.add.particles(doorX, 350, 'fly_trail', {
-                    quantity: 40,
-                    lifespan: 1500,
-                    speed: { min: 50, max: 200 },
-                    angle: { min: 0, max: 360 },
-                    scale: { start: 2, end: 8 },
-                    alpha: { start: 0.8, end: 0 },
+                // ETAPA 2: HUMO Y PREPARACIÓN
+                const steam = this.add.particles(doorX, doorY + 120, 'fly_trail', {
+                    quantity: 20,
+                    lifespan: 800,
+                    speedY: { min: -150, max: -50 },
+                    scale: { start: 2, end: 6 },
+                    alpha: { start: 0.6, end: 0 },
                     blendMode: 'ADD',
                     tint: 0x00ff41
                 }).setDepth(25);
 
-                this.time.delayedCall(1000, () => {
-                    greenSmoke.stop();
+                this.time.delayedCall(600, () => {
+                    steam.stop();
 
-                    // ETAPA 2: APLICAR MÁSCARA AL FONDO
+                    // Revelar el interior
+                    this.interior.setAlpha(1);
+                    this.doorGlow.setAlpha(1);
+
+                    // MÁSCARA TOTAL (Ajustamos para que NO existan huecos de 1px)
                     const maskGraphics = this.make.graphics();
                     maskGraphics.fillStyle(0xffffff);
-                    maskGraphics.fillRect(0, 0, doorX - panelWidth, height);
-                    maskGraphics.fillRect(doorX + panelWidth, 0, width - (doorX + panelWidth), height);
+
+                    // Izquierda y Derecha (con solape central)
+                    maskGraphics.fillRect(0, 0, doorX - panelWidth + 2, height);
+                    maskGraphics.fillRect(doorX + panelWidth - 2, 0, width - (doorX + panelWidth) + 2, height);
+                    // Superior e Inferior (con solape vertical)
+                    maskGraphics.fillRect(doorX - panelWidth, 0, panelWidth * 2, doorY - (doorHeight / 2) + 2);
+                    maskGraphics.fillRect(doorX - panelWidth, doorY + (doorHeight / 2) - 2, panelWidth * 2, height - (doorY + doorHeight / 2) + 2);
+
                     const mask = new Phaser.Display.Masks.GeometryMask(this, maskGraphics);
                     this.background.setMask(mask);
 
-                    // ETAPA 3: APERTURA Y DESVANECIMIENTO
-                    this.cameras.main.shake(1200, 0.012);
+                    // ETAPA 3: APERTURA CINEMÁTICA
+                    this.cameras.main.shake(1500, 0.008);
 
-                    const steam = this.add.particles(doorX, 350, 'fly_trail', {
-                        quantity: 6,
-                        lifespan: 1200,
-                        speedY: { min: -140, max: -70 },
-                        scale: { start: 3, end: 7 },
-                        alpha: { start: 0.6, end: 0 },
-                        blendMode: 'ADD'
-                    }).setDepth(20);
+                    const flash = this.add.rectangle(doorX, doorY, panelWidth * 2, doorHeight, 0xffffff, 1)
+                        .setDepth(30).setAlpha(0);
+                    this.tweens.add({ targets: flash, alpha: 0.8, duration: 150, yoyo: true });
 
                     this.tweens.add({
-                        targets: [this.doorPanelLeft],
-                        x: doorX - 220,
-                        alpha: 0, // Se desvanece para no tapar al barrendero
+                        targets: this.doorPanelLeft,
+                        x: doorX - 250,
+                        alpha: 0,
                         duration: 3500,
-                        ease: 'Cubic.easeInOut'
+                        ease: 'Quint.easeInOut'
                     });
 
                     this.tweens.add({
-                        targets: [this.doorPanelRight],
-                        x: doorX + 220,
-                        alpha: 0, // Se desvanece para no tapar al barrendero
+                        targets: this.doorPanelRight,
+                        x: doorX + 250,
+                        alpha: 0,
                         duration: 3500,
-                        ease: 'Cubic.easeInOut',
-                        onComplete: () => {
-                            steam.stop();
-                            this.cameras.main.pan(doorX, height / 2, 2000, 'Quad.easeInOut');
-                            this.cameras.main.zoomTo(3.5, 4000, 'Cubic.easeIn', true);
-                            this.time.delayedCall(3000, () => {
-                                this.cameras.main.fadeOut(1500, 0, 0, 0);
-                            });
-                            this.cameras.main.once('camerafadeoutcomplete', () => {
-                                this.showVictoryScreen();
-                            });
-                        }
+                        ease: 'Quint.easeInOut'
+                    });
+
+                    // ZOOM DINÁMICO
+                    this.time.delayedCall(500, () => {
+                        this.cameras.main.pan(doorX, doorY, 3500, 'Sine.easeInOut');
+                        this.cameras.main.zoomTo(6.5, 4500, 'Expo.easeIn', true);
+
+                        this.time.delayedCall(3000, () => {
+                            this.cameras.main.fadeOut(1500, 0, 0, 0);
+                        });
+                    });
+
+                    this.cameras.main.once('camerafadeoutcomplete', () => {
+                        this.showVictoryScreen();
                     });
                 });
             }
