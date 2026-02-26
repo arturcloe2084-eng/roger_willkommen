@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { PlayerState } from '../services/PlayerState.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /**
  * CrosswordScene — Crucigrama generado automáticamente desde vocabulary.json
@@ -8,11 +9,11 @@ import { PlayerState } from '../services/PlayerState.js';
  */
 export class CrosswordScene extends Phaser.Scene {
     constructor() {
-        super('CrosswordScene');
+        super(SCENE_KEYS.CROSSWORD);
     }
 
     init(data) {
-        this.returnScene = data.returnScene || 'SceneEngine';
+        this.returnScene = data.returnScene || SCENE_KEYS.SCENE_ENGINE;
     }
 
     create() {
@@ -165,8 +166,8 @@ export class CrosswordScene extends Phaser.Scene {
             field.text.setFill('#006600');
             field.resultIcon.setText('✅');
 
-            PlayerState.learnWord(field.wordObj.word, field.wordObj.translation);
-            PlayerState.addXP(20);
+            playerProgressStore.learnWord(field.wordObj.word, field.wordObj.translation);
+            playerProgressStore.addXP(20);
             this.game.events.emit('update-hud');
 
             // Actualizar contador
@@ -176,7 +177,7 @@ export class CrosswordScene extends Phaser.Scene {
             if (solved === this.inputFields.length) {
                 this.statusText.setText('🎉 ¡CRUCIGRAMA COMPLETADO! +50 XP BONUS. Pulsa ESC para salir.');
                 this.statusText.setFill('#006600');
-                PlayerState.addXP(50);
+                playerProgressStore.addXP(50);
                 this.game.events.emit('update-hud');
                 this.completedPuzzle = true;
             } else {

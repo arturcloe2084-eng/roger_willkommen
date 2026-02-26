@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { askNPC } from '../services/GeminiService.js';
-import { PlayerState } from '../services/PlayerState.js';
-import { voiceService } from '../services/VoiceService.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { askNpcDialogue } from '../../services/ai/NpcDialogueService.js';
+import { voiceService } from '../../services/audio/VoiceService.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /**
  * DialogScene — Diálogo con NPC vía IA (Gemini).
@@ -10,12 +11,12 @@ import { voiceService } from '../services/VoiceService.js';
  */
 export class DialogScene extends Phaser.Scene {
     constructor() {
-        super('DialogScene');
+        super(SCENE_KEYS.DIALOG);
     }
 
     init(data) {
         this.npcData = data;
-        this.returnScene = data.returnScene || 'SceneEngine';
+        this.returnScene = data.returnScene || SCENE_KEYS.SCENE_ENGINE;
         this.lastResponse = null;
     }
 
@@ -63,14 +64,14 @@ export class DialogScene extends Phaser.Scene {
         this.micButton.on('pointerout', () => micBg.setFillStyle(0x00ff41, 0.2));
 
         // --- Nivel del jugador visible ---
-        this.add.text(width / 2 + 280, height / 2 - 190, `LVL ${PlayerState.level}`, {
+        this.add.text(width / 2 + 280, height / 2 - 190, `LVL ${playerProgressStore.level}`, {
             fontFamily: '"Press Start 2P"',
             fontSize: '8px',
             fill: '#888888'
         }).setOrigin(0.5);
 
         // --- Palabras aprendidas (recordatorio) ---
-        const recentWords = PlayerState.learnedWords.slice(-3).map(w => w.word).join(', ');
+        const recentWords = playerProgressStore.learnedWords.slice(-3).map(w => w.word).join(', ');
         if (recentWords) {
             this.add.text(width / 2 - 320, height / 2 + 120, `📖 Últimas palabras: ${recentWords}`, {
                 fontFamily: 'VT323',
@@ -103,7 +104,7 @@ export class DialogScene extends Phaser.Scene {
             'English': 'What can I do for you?',
             'Spanish': '¿Qué puedo hacer por usted?'
         };
-        const greeting = greetings[PlayerState.targetLanguage] || greetings['German'];
+        const greeting = greetings[playerProgressStore.targetLanguage] || greetings['German'];
         const initialText = `${this.npcData.displayName}: "${greeting}"`;
 
         this.updateHistory(initialText);
@@ -148,17 +149,17 @@ export class DialogScene extends Phaser.Scene {
         this.inputText.setText('> ...PROCESANDO...');
         this.updateHistory(`Tú: "${message}"\n\nEsperando respuesta...`);
 
-        const storyContext = `Contexto narrativo actual: Día ${PlayerState.story.day}, Capítulo "${PlayerState.story.chapter}", Objetivo "${PlayerState.story.activeObjective}".`;
-        const response = await askNPC(`${this.npcData.personality}\n${storyContext}`, message, {
-            targetLanguage: PlayerState.targetLanguage,
-            level: PlayerState.level
+        const storyContext = `Contexto narrativo actual: Día ${playerProgressStore.story.day}, Capítulo "${playerProgressStore.story.chapter}", Objetivo "${playerProgressStore.story.activeObjective}".`;
+        const response = await askNpcDialogue(`${this.npcData.personality}\n${storyContext}`, message, {
+            targetLanguage: playerProgressStore.targetLanguage,
+            level: playerProgressStore.level
         });
         this.lastResponse = response;
 
         // Procesar resultado
-        PlayerState.recordResult(response.evaluation);
+        playerProgressStore.recordResult(response.evaluation);
         if (response.xp_reward) {
-            PlayerState.addXP(response.xp_reward);
+            playerProgressStore.addXP(response.xp_reward);
             this.game.events.emit('update-hud');
         }
 

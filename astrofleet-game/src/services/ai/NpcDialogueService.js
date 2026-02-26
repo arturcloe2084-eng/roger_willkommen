@@ -1,13 +1,8 @@
-// ============================================================
-//  GeminiService.js — Comunicación con el Proxy Railway
-//  Versión JavaScript (equivalente al GeminiService.lua)
-// ============================================================
-
-import { PROXY_URL, GAME_SECRET } from '../constants.js';
+import { API_CONFIG } from '../../config/apiConfig.js';
 
 const HEADERS = {
     'Content-Type': 'application/json',
-    'x-astrofleet-secret': GAME_SECRET,
+    'x-astrofleet-secret': API_CONFIG.GAME_SECRET,
 };
 
 /**
@@ -27,7 +22,7 @@ export async function askNPC(npcPersonality, playerMessage, playerProfile) {
     };
 
     try {
-        const response = await fetch(`${PROXY_URL}/npc`, {
+        const response = await fetch(`${API_CONFIG.PROXY_URL}/npc`, {
             method: 'POST',
             headers: HEADERS,
             body: JSON.stringify({
@@ -36,7 +31,7 @@ export async function askNPC(npcPersonality, playerMessage, playerProfile) {
                 targetLanguage: playerProfile.targetLanguage,
                 playerLevel: playerProfile.level,
             }),
-            signal: AbortSignal.timeout(12000),
+            signal: AbortSignal.timeout(API_CONFIG.TIMEOUT_MS.NPC),
         });
 
         if (!response.ok) {
@@ -71,7 +66,7 @@ export async function narrateObject(objectName, objectDescription, playerProfile
     const FALLBACK_NARRATION = 'Un objeto misterioso. Tan misterioso como tu nivel de alemán.';
 
     try {
-        const response = await fetch(`${PROXY_URL}/narrate`, {
+        const response = await fetch(`${API_CONFIG.PROXY_URL}/narrate`, {
             method: 'POST',
             headers: HEADERS,
             body: JSON.stringify({
@@ -80,7 +75,7 @@ export async function narrateObject(objectName, objectDescription, playerProfile
                 targetLanguage: playerProfile.targetLanguage,
                 playerLevel: playerProfile.level,
             }),
-            signal: AbortSignal.timeout(8000),
+            signal: AbortSignal.timeout(API_CONFIG.TIMEOUT_MS.NARRATION),
         });
 
         const data = await response.json();
@@ -91,3 +86,6 @@ export async function narrateObject(objectName, objectDescription, playerProfile
         return FALLBACK_NARRATION;
     }
 }
+
+export const askNpcDialogue = askNPC;
+export const narrateGameObject = narrateObject;

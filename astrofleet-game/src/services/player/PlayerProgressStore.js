@@ -1,8 +1,5 @@
-// ============================================================
-//  PlayerState.js — Estado global del jugador
-// ============================================================
-
-export const PlayerState = {
+// Central player progression + narrative state store.
+export const playerProgressStore = {
     name: 'Roger',
     targetLanguage: 'German',
     level: 1,
@@ -116,3 +113,6 @@ export const PlayerState = {
         return Math.min(100, Math.floor((this.xp / this.xpToNextLevel) * 100));
     },
 };
+
+// Legacy alias kept to avoid breaking in-progress refs while refactoring.
+export const PlayerState = playerProgressStore;

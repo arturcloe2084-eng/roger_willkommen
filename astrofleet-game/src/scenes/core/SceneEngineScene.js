@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { PlayerState } from '../services/PlayerState.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /**
  * SceneEngine — Motor genérico de escenas.
@@ -10,9 +11,9 @@ import { PlayerState } from '../services/PlayerState.js';
  *
  * Para añadir una escena nueva, solo edita /public/data/scenes.json
  */
-export class SceneEngine extends Phaser.Scene {
+export class SceneEngineScene extends Phaser.Scene {
     constructor() {
-        super('SceneEngine');
+        super(SCENE_KEYS.SCENE_ENGINE);
     }
 
     init(data) {
@@ -33,7 +34,7 @@ export class SceneEngine extends Phaser.Scene {
 
         console.log(`[SceneEngine] Cargando escena: ${this.sceneDef.name}`);
 
-        const storyChanged = PlayerState.setStoryContext({
+        const storyChanged = playerProgressStore.setStoryContext({
             chapter: this.sceneDef.chapter,
             objective: this.sceneDef.objective
         });
@@ -141,8 +142,8 @@ export class SceneEngine extends Phaser.Scene {
         this.cameras.main.fadeIn(600, 0, 0, 0);
 
         // ═══ 7. HUD ═══
-        if (!this.scene.isActive('HUDScene')) {
-            this.scene.launch('HUDScene');
+        if (!this.scene.isActive(SCENE_KEYS.GAME_HUD)) {
+            this.scene.launch(SCENE_KEYS.GAME_HUD);
         }
         this.game.events.emit('update-story');
 
@@ -249,12 +250,12 @@ export class SceneEngine extends Phaser.Scene {
     navigateTo(targetSceneId, options = {}) {
         const daySteps = Math.max(0, Number(options.advanceDay) || 0);
         if (daySteps > 0) {
-            PlayerState.advanceDay(daySteps);
+            playerProgressStore.advanceDay(daySteps);
             this.game.events.emit('update-story');
         }
 
         if (options.travelLabel) {
-            PlayerState.addJournal(
+            playerProgressStore.addJournal(
                 `Te desplazas hacia: ${options.travelLabel}.`,
                 `travel:${this.sceneId}:${targetSceneId}`
             );
@@ -269,33 +270,33 @@ export class SceneEngine extends Phaser.Scene {
 
     openDialog(hs) {
         this.scene.pause();
-        this.scene.launch('DialogScene', {
+        this.scene.launch(SCENE_KEYS.DIALOG, {
             npcName: hs.npc.name,
             displayName: hs.npc.displayName || hs.npc.name,
             personality: hs.npc.personality,
-            returnScene: 'SceneEngine'
+            returnScene: SCENE_KEYS.SCENE_ENGINE
         });
     }
 
     openCrossword() {
         this.scene.pause();
-        this.scene.launch('CrosswordScene', {
-            returnScene: 'SceneEngine'
+        this.scene.launch(SCENE_KEYS.CROSSWORD, {
+            returnScene: SCENE_KEYS.SCENE_ENGINE
         });
     }
 
     openQuiz() {
         this.scene.pause();
-        this.scene.launch('QuizScene', {
-            returnScene: 'SceneEngine'
+        this.scene.launch(SCENE_KEYS.QUIZ, {
+            returnScene: SCENE_KEYS.SCENE_ENGINE
         });
     }
 
     openSignalLocator(hs) {
         const options = hs.signalLocator || {};
         this.scene.pause();
-        this.scene.launch('SignalLocatorScene', {
-            returnScene: 'SceneEngine',
+        this.scene.launch(SCENE_KEYS.SIGNAL_LOCATOR, {
+            returnScene: SCENE_KEYS.SCENE_ENGINE,
             stationName: options.station || hs.label || 'Kiezfunk 88.4',
             requiredCaptures: options.requiredCaptures,
             tolerance: options.tolerance,
@@ -308,21 +309,21 @@ export class SceneEngine extends Phaser.Scene {
         let updated = false;
 
         if (story.objective) {
-            updated = PlayerState.setObjective(story.objective) || updated;
+            updated = playerProgressStore.setObjective(story.objective) || updated;
         }
 
         if (story.chapter) {
-            updated = PlayerState.setChapter(story.chapter) || updated;
+            updated = playerProgressStore.setChapter(story.chapter) || updated;
         }
 
         if (story.advanceDay) {
-            PlayerState.advanceDay(story.advanceDay);
+            playerProgressStore.advanceDay(story.advanceDay);
             updated = true;
         }
 
         if (story.journal) {
             const flag = story.flag || `story:${this.sceneId}:${hs.id}`;
-            const added = PlayerState.addJournal(story.journal, flag);
+            const added = playerProgressStore.addJournal(story.journal, flag);
             if (added) {
                 this.showStoryToast('Diario actualizado');
                 updated = true;
@@ -336,7 +337,7 @@ export class SceneEngine extends Phaser.Scene {
         if (!payload?.npcName) return;
         if (payload.evaluation !== 'correct') return;
 
-        const added = PlayerState.addJournal(
+        const added = playerProgressStore.addJournal(
             `Conversación productiva con ${payload.displayName || payload.npcName}.`,
             `dialog:ok:${payload.npcName}`
         );
@@ -363,7 +364,7 @@ export class SceneEngine extends Phaser.Scene {
 
         if (!journal) return;
 
-        const added = PlayerState.addJournal(journal, flag);
+        const added = playerProgressStore.addJournal(journal, flag);
         if (added) {
             this.showStoryToast('Nuevo apunte en el diario');
             this.game.events.emit('update-story');

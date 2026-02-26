@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE } from '../constants.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
 
 /**
  * BootScene — Carga todos los assets, JSONs, y genera texturas pixel art.
@@ -7,7 +7,7 @@ import { TILE } from '../constants.js';
  */
 export class BootScene extends Phaser.Scene {
     constructor() {
-        super('BootScene');
+        super(SCENE_KEYS.BOOT);
     }
 
     preload() {
@@ -109,7 +109,7 @@ export class BootScene extends Phaser.Scene {
         this.createPixelTextures();
 
         console.log('[BootScene] Ready. Starting MenuScene...');
-        this.scene.start('MenuScene');
+        this.scene.start(SCENE_KEYS.MAIN_MENU);
     }
 
     createPixelTextures() {

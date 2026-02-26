@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
-import { PlayerState } from '../services/PlayerState.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /**
- * MenuScene — Menú principal con la imagen de fondo y selección de idioma.
+ * MainMenuScene — Menú principal con la imagen de fondo y selección de idioma.
  * Al iniciar, pasa al SceneEngine con la escena definida en scenes.json.startScene.
  */
-export class MenuScene extends Phaser.Scene {
+export class MainMenuScene extends Phaser.Scene {
     constructor() {
-        super('MenuScene');
+        super(SCENE_KEYS.MAIN_MENU);
     }
 
     create() {
@@ -19,7 +20,7 @@ export class MenuScene extends Phaser.Scene {
             : (this.textures.exists('roger_hangar') ? 'roger_hangar' : 'full_scene');
 
         // ═══ FONDO ═══
-        const bgImage = this.add.image(width / 2, height / 2, menuBgKey)
+        this.add.image(width / 2, height / 2, menuBgKey)
             .setDisplaySize(width, height)
             .setDepth(0);
 
@@ -73,7 +74,7 @@ export class MenuScene extends Phaser.Scene {
         this.langButtons = [];
 
         langs.forEach((lang, i) => {
-            const isSelected = PlayerState.targetLanguage === lang;
+            const isSelected = playerProgressStore.targetLanguage === lang;
             const bx = width / 2 - 160 + (i * 165);
             const by = 240;
 
@@ -87,7 +88,7 @@ export class MenuScene extends Phaser.Scene {
             }).setOrigin(0.5).setDepth(6).setInteractive({ useHandCursor: true });
 
             btn.on('pointerdown', () => {
-                PlayerState.targetLanguage = lang;
+                playerProgressStore.targetLanguage = lang;
                 this._updateLangButtons();
             });
 
@@ -95,8 +96,8 @@ export class MenuScene extends Phaser.Scene {
         });
 
         // ═══ ESTADÍSTICAS (si hay datos anteriores) ═══
-        if (PlayerState.learnedWords.length > 0) {
-            this.add.text(width / 2, 300, `📖 ${PlayerState.learnedWords.length} palabras aprendidas  |  Nivel ${PlayerState.level}`, {
+        if (playerProgressStore.learnedWords.length > 0) {
+            this.add.text(width / 2, 300, `📖 ${playerProgressStore.learnedWords.length} palabras aprendidas  |  Nivel ${playerProgressStore.level}`, {
                 fontFamily: 'VT323',
                 fontSize: '20px',
                 fill: '#ffcc00'
@@ -143,13 +144,13 @@ export class MenuScene extends Phaser.Scene {
 
         this.cameras.main.fadeOut(500, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start('SceneEngine', { sceneId: startScene });
+            this.scene.start(SCENE_KEYS.SCENE_ENGINE, { sceneId: startScene });
         });
     }
 
     _updateLangButtons() {
         this.langButtons.forEach(b => {
-            const isSelected = PlayerState.targetLanguage === b.lang;
+            const isSelected = playerProgressStore.targetLanguage === b.lang;
             b.text.setFill(isSelected ? '#00ff41' : '#555555');
             b.bg.setStrokeStyle(2, isSelected ? 0x00ff41 : 0x333333);
             b.bg.setFillStyle(isSelected ? 0x002200 : 0x111111);

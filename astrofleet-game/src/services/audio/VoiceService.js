@@ -1,4 +1,4 @@
-import { PlayerState } from './PlayerState.js';
+import { playerProgressStore } from '../player/PlayerProgressStore.js';
 
 export class VoiceService {
     constructor() {
@@ -32,7 +32,7 @@ export class VoiceService {
     }
 
     get currentBCP47() {
-        return this.langMap[PlayerState.targetLanguage] || 'de-DE';
+        return this.langMap[playerProgressStore.targetLanguage] || 'de-DE';
     }
 
     startListening(onResult, onError) {
@@ -69,7 +69,7 @@ export class VoiceService {
 
         if (selectedVoice) {
             utterance.voice = selectedVoice;
-            console.log(`[VoiceService] ${PlayerState.targetLanguage} via ${selectedVoice.name}`);
+            console.log(`[VoiceService] ${playerProgressStore.targetLanguage} via ${selectedVoice.name}`);
         }
 
         utterance.lang = bcp47;

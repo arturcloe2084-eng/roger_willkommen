@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { PlayerState } from '../services/PlayerState.js';
-import { tuneSignalRadio } from '../services/SignalRadioService.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
+import { tuneSignalRadio } from '../../services/radio/SignalRadioService.js';
 
 const DEFAULT_SIGNALS = [
     { word: 'Achtung', translation: 'Atención', category: 'señales', example: 'Achtung, Zug fährt ein.' },
@@ -18,11 +19,11 @@ const DEFAULT_SIGNALS = [
  */
 export class SignalLocatorScene extends Phaser.Scene {
     constructor() {
-        super('SignalLocatorScene');
+        super(SCENE_KEYS.SIGNAL_LOCATOR);
     }
 
     init(data) {
-        this.returnScene = data.returnScene || 'SceneEngine';
+        this.returnScene = data.returnScene || SCENE_KEYS.SCENE_ENGINE;
         this.stationName = data.stationName || 'Kiezfunk 88.4';
         this.requiredCaptures = Phaser.Math.Clamp(Number(data.requiredCaptures) || 2, 1, 6);
         this.tolerance = Phaser.Math.Clamp(Number(data.tolerance) || 2.5, 0.8, 8);
@@ -238,11 +239,11 @@ export class SignalLocatorScene extends Phaser.Scene {
         const distance = Math.abs(this.frequency - this.targetFrequency);
         if (distance <= this.tolerance) {
             const current = this.currentSignal;
-            const isNewWord = PlayerState.learnWord(current.word, current.translation);
+            const isNewWord = playerProgressStore.learnWord(current.word, current.translation);
             let xp = isNewWord ? 25 : 10;
             if (distance <= this.tolerance * 0.5) xp += 5;
 
-            PlayerState.addXP(xp);
+            playerProgressStore.addXP(xp);
             this.game.events.emit('update-hud');
 
             if (!this.captured.some((c) => c.word === current.word)) {
@@ -261,7 +262,7 @@ export class SignalLocatorScene extends Phaser.Scene {
 
             if (this.captured.length >= this.requiredCaptures) {
                 const bonus = 20;
-                PlayerState.addXP(bonus);
+                playerProgressStore.addXP(bonus);
                 this.game.events.emit('update-hud');
                 this.completed = true;
                 this.statusText.setText(`BARRIDO COMPLETO · +${bonus} XP BONUS`);
@@ -342,7 +343,7 @@ export class SignalLocatorScene extends Phaser.Scene {
         this.isTuningRadio = true;
 
         const signal = forceSignal || this.currentSignal;
-        const learnedSlice = PlayerState.learnedWords.slice(-4).map((w) => ({
+        const learnedSlice = playerProgressStore.learnedWords.slice(-4).map((w) => ({
             word: w.word,
             translation: w.translation
         }));

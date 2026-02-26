@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { PlayerState } from '../services/PlayerState.js';
+import { SCENE_KEYS } from '../../config/sceneKeys.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /**
  * QuizScene — Test de 4 opciones generado desde vocabulary.json
@@ -8,11 +9,11 @@ import { PlayerState } from '../services/PlayerState.js';
  */
 export class QuizScene extends Phaser.Scene {
     constructor() {
-        super('QuizScene');
+        super(SCENE_KEYS.QUIZ);
     }
 
     init(data) {
-        this.returnScene = data.returnScene || 'SceneEngine';
+        this.returnScene = data.returnScene || SCENE_KEYS.SCENE_ENGINE;
     }
 
     create() {
@@ -202,9 +203,9 @@ export class QuizScene extends Phaser.Scene {
             this.feedbackText.setText('✅ ¡Richtig! (Correcto)');
             this.feedbackText.setFill('#00ff41');
 
-            PlayerState.learnWord(current.word, current.translation);
-            PlayerState.addXP(15);
-            PlayerState.recordResult('correct');
+            playerProgressStore.learnWord(current.word, current.translation);
+            playerProgressStore.addXP(15);
+            playerProgressStore.recordResult('correct');
         } else {
             this.optionButtons[index].bg.setFillStyle(0x330000);
             this.optionButtons[index].bg.setStrokeStyle(2, 0xff3333);
@@ -213,7 +214,7 @@ export class QuizScene extends Phaser.Scene {
             this.feedbackText.setText(`❌ La respuesta era: ${this.correctAnswer}`);
             this.feedbackText.setFill('#ff6666');
 
-            PlayerState.recordResult('incorrect');
+            playerProgressStore.recordResult('incorrect');
         }
 
         this.game.events.emit('update-hud');
@@ -246,7 +247,7 @@ export class QuizScene extends Phaser.Scene {
         });
 
         if (percent >= 60) {
-            PlayerState.addXP(30);
+            playerProgressStore.addXP(30);
             this.game.events.emit('update-hud');
         }
 

@@ -1,4 +1,4 @@
-import { GAME_SECRET, PROXY_URL } from '../constants.js';
+import { API_CONFIG } from '../../config/apiConfig.js';
 
 const MAX_WORDS = 10;
 
@@ -51,7 +51,7 @@ const callMainApi = async (payload) => {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
-    }, 12000);
+    }, API_CONFIG.TIMEOUT_MS.RADIO);
 
     if (!response.ok) {
         const reason = await parseErrorMessage(response);
@@ -62,14 +62,14 @@ const callMainApi = async (payload) => {
 };
 
 const callProxyApi = async (payload) => {
-    const response = await fetchWithTimeout(`${PROXY_URL}/radio/tune`, {
+    const response = await fetchWithTimeout(`${API_CONFIG.PROXY_URL}/radio/tune`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-astrofleet-secret': GAME_SECRET,
+            'x-astrofleet-secret': API_CONFIG.GAME_SECRET,
         },
         body: JSON.stringify(payload),
-    }, 12000);
+    }, API_CONFIG.TIMEOUT_MS.RADIO);
 
     if (!response.ok) {
         const reason = await parseErrorMessage(response);
