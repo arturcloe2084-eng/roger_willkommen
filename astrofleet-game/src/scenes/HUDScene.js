@@ -29,8 +29,28 @@ export class HUDScene extends Phaser.Scene {
             fill: '#ffaa00'
         });
 
+        this.dayText = this.add.text(10, 84, `Día: ${PlayerState.story.day}/30`, {
+            fontFamily: 'VT323',
+            fontSize: '18px',
+            fill: '#88ddff'
+        });
+
+        this.chapterText = this.add.text(10, 106, `${PlayerState.story.chapter}`, {
+            fontFamily: 'VT323',
+            fontSize: '16px',
+            fill: '#88aaff'
+        });
+
+        this.objectiveText = this.add.text(300, 10, `OBJ: ${PlayerState.story.activeObjective}`, {
+            fontFamily: 'VT323',
+            fontSize: '18px',
+            fill: '#ccffcc',
+            wordWrap: { width: 490 }
+        }).setAlpha(0.9);
+
         // Eventos para actualizar gradualmente
         this.game.events.on('update-hud', () => this.updateHUD());
+        this.game.events.on('update-story', () => this.updateHUD());
         this.updateHUD();
     }
 
@@ -41,5 +61,8 @@ export class HUDScene extends Phaser.Scene {
         this.levelText.setText(`LVL: ${PlayerState.level}`);
         this.xpText.setText(`XP: ${PlayerState.xp}/${PlayerState.xpToNextLevel}`);
         this.wordsText.setText(`Palabras: ${PlayerState.learnedWords.length}`);
+        this.dayText.setText(`Día: ${PlayerState.story.day}/30`);
+        this.chapterText.setText(`${PlayerState.story.chapter}`);
+        this.objectiveText.setText(`OBJ: ${PlayerState.story.activeObjective}`);
     }
 }

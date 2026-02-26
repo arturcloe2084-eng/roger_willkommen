@@ -3,6 +3,11 @@ import { askNPC } from '../services/GeminiService.js';
 import { PlayerState } from '../services/PlayerState.js';
 import { voiceService } from '../services/VoiceService.js';
 
+/**
+ * DialogScene — Diálogo con NPC vía IA (Gemini).
+ * Ahora funciona con cualquier NPC definido en scenes.json.
+ * Solo necesita: npcName, displayName, personality, returnScene
+ */
 export class DialogScene extends Phaser.Scene {
     constructor() {
         super('DialogScene');
@@ -10,6 +15,8 @@ export class DialogScene extends Phaser.Scene {
 
     init(data) {
         this.npcData = data;
+        this.returnScene = data.returnScene || 'SceneEngine';
+        this.lastResponse = null;
     }
 
     create() {
@@ -22,10 +29,11 @@ export class DialogScene extends Phaser.Scene {
         const dialogBox = this.add.rectangle(width / 2, height / 2, 700, 450, 0x0a0a2a, 0.95);
         dialogBox.setStrokeStyle(4, 0x00ff41);
 
-        this.titleText = this.add.text(width / 2, height / 2 - 190, `SISTEMA DE COMUNICACIÓN: ${this.npcData.displayName}`, {
+        this.titleText = this.add.text(width / 2, height / 2 - 190, `💬 ${this.npcData.displayName}`, {
             fontFamily: '"Press Start 2P"',
-            fontSize: '14px',
-            fill: '#00ff41'
+            fontSize: '10px',
+            fill: '#00ff41',
+            wordWrap: { width: 640 }
         }).setOrigin(0.5);
 
         this.historyText = this.add.text(width / 2 - 320, height / 2 - 140, 'Estableciendo conexión...', {
@@ -54,32 +62,52 @@ export class DialogScene extends Phaser.Scene {
         this.micButton.on('pointerover', () => micBg.setFillStyle(0x00ff41, 0.5));
         this.micButton.on('pointerout', () => micBg.setFillStyle(0x00ff41, 0.2));
 
+        // --- Nivel del jugador visible ---
+        this.add.text(width / 2 + 280, height / 2 - 190, `LVL ${PlayerState.level}`, {
+            fontFamily: '"Press Start 2P"',
+            fontSize: '8px',
+            fill: '#888888'
+        }).setOrigin(0.5);
+
+        // --- Palabras aprendidas (recordatorio) ---
+        const recentWords = PlayerState.learnedWords.slice(-3).map(w => w.word).join(', ');
+        if (recentWords) {
+            this.add.text(width / 2 - 320, height / 2 + 120, `📖 Últimas palabras: ${recentWords}`, {
+                fontFamily: 'VT323',
+                fontSize: '16px',
+                fill: '#555555'
+            });
+        }
+
         this.userInput = '';
 
         // Listener de teclado
         this.input.keyboard.on('keydown', (event) => {
+            if (event.keyCode === 27) { // ESC
+                this.closeDialog();
+                return;
+            }
             if (event.keyCode === 8 && this.userInput.length > 0) {
                 this.userInput = this.userInput.slice(0, -1);
             } else if (event.keyCode === 13 && this.userInput.length > 0) {
                 this.sendMessage();
-            } else if (event.key.length === 1 && this.userInput.length < 50) {
+            } else if (event.key.length === 1 && this.userInput.length < 80) {
                 this.userInput += event.key;
             }
             this.inputText.setText(`> ${this.userInput}_`);
         });
 
-        // Mapeo de saludos iniciales según el idioma
+        // Saludo inicial según idioma
         const greetings = {
-            'German': '¿Was wollen Sie?',
-            'English': '¿What do you want?',
-            'Spanish': '¿Qué es lo que quieres?'
+            'German': 'Was kann ich für Sie tun?',
+            'English': 'What can I do for you?',
+            'Spanish': '¿Qué puedo hacer por usted?'
         };
-        const initialGreetingText = greetings[PlayerState.targetLanguage] || greetings['German'];
+        const greeting = greetings[PlayerState.targetLanguage] || greetings['German'];
+        const initialText = `${this.npcData.displayName}: "${greeting}"`;
 
-        // Primer mensaje del sistema
-        const initialGreeting = `${this.npcData.displayName}: "${initialGreetingText}"`;
-        this.updateHistory(initialGreeting);
-        voiceService.speak(initialGreetingText);
+        this.updateHistory(initialText);
+        voiceService.speak(greeting);
     }
 
     startVoiceInput() {
@@ -118,17 +146,19 @@ export class DialogScene extends Phaser.Scene {
         const message = this.userInput;
         this.userInput = '';
         this.inputText.setText('> ...PROCESANDO...');
-        this.updateHistory(`Tú: "${message}"\n\nEsperando respuesta del traductor universal...`);
+        this.updateHistory(`Tú: "${message}"\n\nEsperando respuesta...`);
 
-        const response = await askNPC(this.npcData.personality, message, {
+        const storyContext = `Contexto narrativo actual: Día ${PlayerState.story.day}, Capítulo "${PlayerState.story.chapter}", Objetivo "${PlayerState.story.activeObjective}".`;
+        const response = await askNPC(`${this.npcData.personality}\n${storyContext}`, message, {
             targetLanguage: PlayerState.targetLanguage,
             level: PlayerState.level
         });
+        this.lastResponse = response;
 
         // Procesar resultado
         PlayerState.recordResult(response.evaluation);
         if (response.xp_reward) {
-            const levelUp = PlayerState.addXP(response.xp_reward);
+            PlayerState.addXP(response.xp_reward);
             this.game.events.emit('update-hud');
         }
 
@@ -139,26 +169,36 @@ export class DialogScene extends Phaser.Scene {
         let fullText = `${this.npcData.displayName}: "${response.npc_dialogue}"\n\n`;
         fullText += `[EVALUACIÓN]: ${response.evaluation.toUpperCase()}\n`;
         fullText += `[CONSEJO]: ${response.feedback_es}\n\n`;
-        fullText += `Presiona ESC para salir.`;
+        fullText += `Escribe otra respuesta o ESC para salir.`;
 
         this.updateHistory(fullText);
-        this.inputText.setText('> Conversación terminada.');
+        this.inputText.setText('> _');
 
-        // Ejecutar acción si es GuardXorblax
+        // Si hay acción de juego (abrir puerta, etc.)
         if (response.game_action === 'open_door') {
-            const mainGame = this.scene.get('GameScene');
-            mainGame.events.emit('open-door', this.npcData.npcName);
+            const engine = this.scene.get(this.returnScene);
+            if (engine && engine.events) {
+                engine.events.emit('open-door', this.npcData.npcName);
+            }
 
-            // Auto-cerrar tras breve retardo para ver la respuesta
-            this.time.delayedCall(1500, () => {
-                this.scene.stop();
-                this.scene.resume('GameScene');
-            });
-        } else {
-            this.input.keyboard.once('keydown-ESC', () => {
-                this.scene.stop();
-                this.scene.resume('GameScene');
+            this.time.delayedCall(2000, () => {
+                this.closeDialog();
             });
         }
+    }
+
+    closeDialog() {
+        const engine = this.scene.get(this.returnScene);
+        if (engine && engine.events) {
+            engine.events.emit('dialog-closed', {
+                npcName: this.npcData?.npcName || this.npcData?.name || this.npcData?.displayName,
+                displayName: this.npcData?.displayName,
+                evaluation: this.lastResponse?.evaluation || null,
+                gameAction: this.lastResponse?.game_action || null,
+            });
+        }
+
+        this.scene.stop();
+        this.scene.resume(this.returnScene);
     }
 }

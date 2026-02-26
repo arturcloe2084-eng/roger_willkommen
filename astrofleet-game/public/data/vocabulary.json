@@ -1,0 +1,158 @@
+{
+    "meta": {
+        "description": "Lista de vocabulario del jugador. Añade palabras aquí y todos los mini-juegos las usarán automáticamente.",
+        "targetLanguage": "German"
+    },
+    "words": [
+        {
+            "word": "Hallo",
+            "translation": "Hola",
+            "category": "saludo",
+            "example": "Hallo, ich bin neu hier."
+        },
+        {
+            "word": "Danke",
+            "translation": "Gracias",
+            "category": "saludo",
+            "example": "Danke schön!"
+        },
+        {
+            "word": "Bitte",
+            "translation": "Por favor / De nada",
+            "category": "saludo",
+            "example": "Bitte schön."
+        },
+        {
+            "word": "Ja",
+            "translation": "Sí",
+            "category": "básico",
+            "example": "Ja, das stimmt."
+        },
+        {
+            "word": "Nein",
+            "translation": "No",
+            "category": "básico",
+            "example": "Nein, das ist falsch."
+        },
+        {
+            "word": "Guten Tag",
+            "translation": "Buenos días",
+            "category": "saludo",
+            "example": "Guten Tag, Herr Brinkmann."
+        },
+        {
+            "word": "Tschüss",
+            "translation": "Adiós (informal)",
+            "category": "saludo",
+            "example": "Tschüss, bis morgen!"
+        },
+        {
+            "word": "die Wohnung",
+            "translation": "El apartamento",
+            "category": "vivienda",
+            "example": "Die Wohnung ist klein."
+        },
+        {
+            "word": "der Schlüssel",
+            "translation": "La llave",
+            "category": "vivienda",
+            "example": "Der Schlüssel liegt unter der Fußmatte."
+        },
+        {
+            "word": "die Tür",
+            "translation": "La puerta",
+            "category": "vivienda",
+            "example": "Bitte öffnen Sie die Tür."
+        },
+        {
+            "word": "die Küche",
+            "translation": "La cocina",
+            "category": "vivienda",
+            "example": "Die Küche ist links."
+        },
+        {
+            "word": "der Termin",
+            "translation": "La cita",
+            "category": "burocracia",
+            "example": "Ich habe einen Termin um 10 Uhr."
+        },
+        {
+            "word": "das Formular",
+            "translation": "El formulario",
+            "category": "burocracia",
+            "example": "Bitte füllen Sie das Formular aus."
+        },
+        {
+            "word": "die Anmeldung",
+            "translation": "El registro/empadronamiento",
+            "category": "burocracia",
+            "example": "Ich brauche eine Anmeldung."
+        },
+        {
+            "word": "der Ausweis",
+            "translation": "El documento de identidad",
+            "category": "burocracia",
+            "example": "Haben Sie Ihren Ausweis?"
+        },
+        {
+            "word": "Entschuldigung",
+            "translation": "Disculpe/Perdón",
+            "category": "comunicación",
+            "example": "Entschuldigung, wo ist das Amt?"
+        },
+        {
+            "word": "Ich verstehe nicht",
+            "translation": "No entiendo",
+            "category": "comunicación",
+            "example": "Entschuldigung, ich verstehe nicht."
+        },
+        {
+            "word": "Können Sie wiederholen?",
+            "translation": "¿Puede repetir?",
+            "category": "comunicación",
+            "example": "Können Sie das bitte wiederholen?"
+        },
+        {
+            "word": "langsamer",
+            "translation": "Más despacio",
+            "category": "comunicación",
+            "example": "Können Sie langsamer sprechen?"
+        },
+        {
+            "word": "das Brot",
+            "translation": "El pan",
+            "category": "supermercado",
+            "example": "Ich möchte ein Brot, bitte."
+        },
+        {
+            "word": "die Milch",
+            "translation": "La leche",
+            "category": "supermercado",
+            "example": "Haben Sie frische Milch?"
+        },
+        {
+            "word": "der Kaffee",
+            "translation": "El café",
+            "category": "supermercado",
+            "example": "Einen Kaffee, bitte."
+        },
+        {
+            "word": "die Rechnung",
+            "translation": "La cuenta/factura",
+            "category": "dinero",
+            "example": "Die Rechnung, bitte."
+        },
+        {
+            "word": "bezahlen",
+            "translation": "Pagar",
+            "category": "dinero",
+            "example": "Wo kann ich bezahlen?"
+        },
+        {
+            "word": "das Konto",
+            "translation": "La cuenta bancaria",
+            "category": "dinero",
+            "example": "Ich möchte ein Konto eröffnen."
+        }
+    ]
+}
