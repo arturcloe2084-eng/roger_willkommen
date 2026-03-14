@@ -139,7 +139,7 @@ export class DictionaryManager {
   /**
    * Agregar nueva palabra personalizada
    */
-  addWord(word, translation, category = 'general', example = '') {
+  addWord(word, translation, category = 'general', example = '', translation1 = '', translation2 = '') {
     // Verificar si ya existe
     const exists = this.getAll().find(
       w => w.word.toLowerCase() === word.toLowerCase()
@@ -153,6 +153,8 @@ export class DictionaryManager {
     this.customWords.push({
       word,
       translation,
+      translation1: translation1 || '',
+      translation2: translation2 || '',
       category: category || 'general',
       example: example || '',
       addedAt: Date.now(),
@@ -166,7 +168,7 @@ export class DictionaryManager {
   /**
    * Actualizar cualquier palabra (base o custom) buscando por nombre original
    */
-  updateWord(originalWord, newWord, newTranslation, newCategory, newExample) {
+  updateWord(originalWord, newWord, newTranslation, newCategory, newExample, newT1, newT2) {
     // Buscar en custom
     const customIdx = this.customWords.findIndex(w => w.word === originalWord);
     if (customIdx >= 0) {
@@ -174,6 +176,8 @@ export class DictionaryManager {
         ...this.customWords[customIdx],
         word: newWord,
         translation: newTranslation,
+        translation1: newT1 !== undefined ? newT1 : (this.customWords[customIdx].translation1 || ''),
+        translation2: newT2 !== undefined ? newT2 : (this.customWords[customIdx].translation2 || ''),
         category: newCategory || 'general',
         example: newExample || ''
       };
@@ -194,6 +198,8 @@ export class DictionaryManager {
         ...this.baseWords[baseIdx],
         word: newWord,
         translation: newTranslation,
+        translation1: newT1 !== undefined ? newT1 : (this.baseWords[baseIdx].translation1 || ''),
+        translation2: newT2 !== undefined ? newT2 : (this.baseWords[baseIdx].translation2 || ''),
         category: newCategory || 'general',
         example: newExample || ''
       };

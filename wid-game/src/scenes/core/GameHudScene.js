@@ -47,8 +47,38 @@ export class GameHudScene extends Phaser.Scene {
             fontFamily: 'VT323',
             fontSize: '18px',
             fill: '#ccffcc',
-            wordWrap: { width: 490 }
+            wordWrap: { width: 350 }
         }).setAlpha(0.9);
+
+        // --- BOTÓN VOLVER AL MENÚ ---
+        const { width: w } = this.cameras.main;
+        this.menuButton = this.add.container(w - 70, 30);
+
+        const btnBg = this.add.rectangle(0, 0, 100, 30, 0x1a0a0a, 0.8);
+        btnBg.setStrokeStyle(2, 0xff6666);
+
+        const btnText = this.add.text(0, 0, `🏠 ${i18n.t('menu_back')}`, {
+            fontFamily: 'VT323',
+            fontSize: '18px',
+            fill: '#ff6666'
+        }).setOrigin(0.5);
+
+        this.menuButton.add([btnBg, btnText]);
+        btnBg.setInteractive({ useHandCursor: true });
+
+        btnBg.on('pointerover', () => {
+            btnBg.setFillStyle(0x3d1010, 1);
+            btnBg.setStrokeStyle(2, 0xff9999);
+            btnText.setFillStyle('#ff9999');
+        });
+
+        btnBg.on('pointerout', () => {
+            btnBg.setFillStyle(0x1a0a0a, 0.8);
+            btnBg.setStrokeStyle(2, 0xff6666);
+            btnText.setFillStyle('#ff6666');
+        });
+
+        btnBg.on('pointerdown', () => this.returnToMenu());
 
         // Eventos para actualizar gradualmente
         this.game.events.on('update-hud', () => this.updateHUD());
@@ -66,5 +96,25 @@ export class GameHudScene extends Phaser.Scene {
         this.dayText.setText(`${i18n.t('hud_day')}: ${playerProgressStore.story.day}/30`);
         this.chapterText.setText(`${playerProgressStore.story.chapter}`);
         this.objectiveText.setText(`OBJ: ${playerProgressStore.story.activeObjective}`);
+    }
+
+    returnToMenu() {
+        // Detener todas las posibles escenas de juego activas
+        [
+            SCENE_KEYS.SCENE_ENGINE,
+            SCENE_KEYS.GAME_HUD,
+            SCENE_KEYS.DIALOG,
+            SCENE_KEYS.CROSSWORD,
+            SCENE_KEYS.QUIZ,
+            SCENE_KEYS.SIGNAL_LOCATOR,
+            SCENE_KEYS.DICTIONARY
+        ].forEach(key => {
+            if (this.scene.isActive(key) || this.scene.isPaused(key) || this.scene.isSleeping(key)) {
+                this.scene.stop(key);
+            }
+        });
+
+        // Volver al menú principal
+        this.scene.start(SCENE_KEYS.MAIN_MENU);
     }
 }

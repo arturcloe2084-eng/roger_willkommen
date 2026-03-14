@@ -190,7 +190,11 @@ export class DictionaryScene extends Phaser.Scene {
           <button class="dict-pin-btn ${pinClass}" data-pin="${this._escAttr(w.word)}" title="${w.pinned ? 'Quitar chinche (aprendida)' : 'Chinche: marcar para estudiar'}">${pinIcon}</button>
           <div class="dict-card-main">
             <span class="dict-word-text">${this._esc(w.word)}</span>
-            <span class="dict-trans-text">${this._esc(w.translation)}</span>
+            <div class="dict-trans-box">
+              <span class="dict-trans-main">${this._esc(w.translation)}</span>
+              ${w.translation1 ? `<span class="dict-trans-sub t1">${this._esc(w.translation1)}</span>` : ''}
+              ${w.translation2 ? `<span class="dict-trans-sub t2">${this._esc(w.translation2)}</span>` : ''}
+            </div>
           </div>
           <span class="dict-badge">${this._esc(w.category || 'general')}</span>
           <div class="dict-card-actions">
@@ -216,7 +220,14 @@ export class DictionaryScene extends Phaser.Scene {
     const found = words ? words.length : total;
     const statsEl = document.getElementById('dict-stats');
     if (statsEl) {
-      statsEl.textContent = `${total} palabras · ${custom} mías · 📌${pinned} para estudiar${found < total ? ` · ${found} filtradas` : ''}`;
+      const wLabel = i18n.t('dict_stats_words');
+      const mLabel = i18n.t('dict_stats_mine');
+      const sLabel = i18n.t('dict_stats_study');
+      const fLabel = i18n.t('dict_stats_filtered');
+
+      let text = `${total} ${wLabel} · ${custom} ${mLabel} · 📌${pinned} ${sLabel}`;
+      if (found < total) text += ` · ${found} ${fLabel}`;
+      statsEl.textContent = text;
     }
   }
 
@@ -381,6 +392,11 @@ export class DictionaryScene extends Phaser.Scene {
     // Crear modal overlay
     const modal = document.createElement('div');
     modal.id = 'dict-edit-modal';
+
+    // Nombres de idiomas para labels
+    const lang1 = i18n.trans1 ? i18n.getLangInfo(i18n.trans1).nativeName : i18n.t('dict_ph_trans');
+    const lang2 = i18n.trans2 ? i18n.getLangInfo(i18n.trans2).nativeName : null;
+
     modal.innerHTML = `
       <div class="dict-modal-backdrop"></div>
       <div class="dict-modal-content">
@@ -388,16 +404,21 @@ export class DictionaryScene extends Phaser.Scene {
         <div class="dict-modal-fields">
           <label>Palabra (alemán)</label>
           <input id="edit-word" type="text" value="${this._escAttr(w.word)}" />
-          <label>Traducción</label>
+          
+          <label>${lang1}</label>
           <input id="edit-trans" type="text" value="${this._escAttr(w.translation)}" />
-          <label>Categoría</label>
+          
+          ${lang2 ? `<label>${lang2}</label><input id="edit-t2" type="text" value="${this._escAttr(w.translation2 || '')}" />` : ''}
+          
+          <label>${i18n.t('dict_ph_cat')}</label>
           <input id="edit-cat" type="text" value="${this._escAttr(w.category || 'general')}" />
-          <label>Ejemplo</label>
+          
+          <label>${i18n.t('dict_ph_ex')}</label>
           <input id="edit-ex" type="text" value="${this._escAttr(w.example || '')}" />
         </div>
         <div class="dict-modal-actions">
-          <button id="edit-save-btn" class="dict-modal-save">✔ GUARDAR</button>
-          <button id="edit-cancel-btn" class="dict-modal-cancel">CANCELAR</button>
+          <button id="edit-save-btn" class="dict-modal-save">✔ ${i18n.t('dict_save').toUpperCase()}</button>
+          <button id="edit-cancel-btn" class="dict-modal-cancel">${i18n.t('dict_close').toUpperCase()}</button>
         </div>
       </div>
     `;
@@ -424,11 +445,13 @@ export class DictionaryScene extends Phaser.Scene {
     modal.querySelector('#edit-save-btn').addEventListener('click', () => {
       const newWord = document.getElementById('edit-word').value.trim();
       const newTrans = document.getElementById('edit-trans').value.trim();
+      const newT1 = document.getElementById('edit-t1').value.trim();
+      const newT2 = document.getElementById('edit-t2').value.trim();
       const newCat = document.getElementById('edit-cat').value.trim();
       const newEx = document.getElementById('edit-ex').value.trim();
 
       if (newWord && newTrans) {
-        this.dictionary.updateWord(word, newWord, newTrans, newCat, newEx);
+        this.dictionary.updateWord(word, newWord, newTrans, newCat, newEx, newT1, newT2);
         this._renderWordList();
       }
       modal.remove();
@@ -492,16 +515,20 @@ export class DictionaryScene extends Phaser.Scene {
 
   /* ── Translate + Add ────────────────────────────────── */
 
-  async _translateWord() {
-    const wordEl = document.getElementById('dict-in-word');
-    const word = (wordEl?.value || '').trim();
+  async _translateWord(sourceField = 'dict-in-word', sourceLang = 'de') {
+    const sourceEl = document.getElementById(sourceField);
+    const word = (sourceEl?.value || '').trim();
     if (!word || this._isTranslating) return;
 
+    const wordEl = document.getElementById('dict-in-word');
     const transEl = document.getElementById('dict-in-trans');
+    const t1El = document.getElementById('dict-in-t1');
+    const t2El = document.getElementById('dict-in-t2');
     const catEl = document.getElementById('dict-in-cat');
     const exEl = document.getElementById('dict-in-ex');
 
-    if (transEl && transEl.value.trim().length > 0) return;
+    // Si el usuario ya rellenó la traducción principal manualmente, no sobreescribir
+    if (sourceField === 'dict-in-word' && transEl && transEl.value.trim().length > 0) return;
 
     this._isTranslating = true;
     this._showToast('🔍 Traduciendo...');
@@ -513,13 +540,35 @@ export class DictionaryScene extends Phaser.Scene {
           'Content-Type': 'application/json',
           'x-game-secret': API_CONFIG.GAME_SECRET
         },
-        body: JSON.stringify({ word })
+        body: JSON.stringify({
+          word, // The word to translate
+          trans1: i18n.trans1,
+          trans2: i18n.trans2,
+          sourceLang
+        })
       });
 
       if (!response.ok) throw new Error('Proxy error');
       const data = await response.json();
+      console.log('[Dictionary] AI Translation Data:', data);
 
-      if (transEl) transEl.value = data.translation || '';
+      // Si es una búsqueda inversa (desde un idioma que no es alemán) o si el campo alemán está vacío
+      const detectedWord = data.word_german || data.word || data.word_de || null;
+      if (detectedWord && wordEl && (!wordEl.value || sourceLang !== 'de')) {
+        wordEl.value = detectedWord;
+        console.log('[Dictionary] Auto-filled German word:', detectedWord);
+      }
+
+      // Rellenar traducciones
+      // Rellenar traducciones
+      if (sourceField !== 'dict-in-trans' && transEl) {
+        transEl.value = data.translation1 || '';
+      }
+
+      if (sourceField !== 'dict-in-t2' && t2El) {
+        t2El.value = data.translation2 || '';
+      }
+
       if (catEl) catEl.value = data.category || 'general';
       if (exEl) exEl.value = data.example || '';
 
@@ -535,11 +584,15 @@ export class DictionaryScene extends Phaser.Scene {
   _addWord() {
     const wordEl = document.getElementById('dict-in-word');
     const transEl = document.getElementById('dict-in-trans');
+    const t1El = document.getElementById('dict-in-t1');
+    const t2El = document.getElementById('dict-in-t2');
     const catEl = document.getElementById('dict-in-cat');
     const exEl = document.getElementById('dict-in-ex');
 
     const word = (wordEl?.value || '').trim();
     const trans = (transEl?.value || '').trim();
+    const t1 = (t1El?.value || '').trim();
+    const t2 = (t2El?.value || '').trim();
     const cat = ((catEl?.value || '').trim() || 'general').toLowerCase();
     const ex = (exEl?.value || '').trim();
 
@@ -548,11 +601,13 @@ export class DictionaryScene extends Phaser.Scene {
       return;
     }
 
-    const ok = this.dictionary.addWord(word, trans, cat, ex);
+    const ok = this.dictionary.addWord(word, trans, cat, ex, t1, t2);
     if (ok) {
       this._showToast(`✔ "${word}" agregada`);
       if (wordEl) wordEl.value = '';
       if (transEl) transEl.value = '';
+      if (t1El) t1El.value = '';
+      if (t2El) t2El.value = '';
       if (catEl) catEl.value = '';
       if (exEl) exEl.value = '';
 
@@ -574,6 +629,14 @@ export class DictionaryScene extends Phaser.Scene {
       try { localStorage.setItem('dictRecordings', JSON.stringify(this._recordings)); } catch (e) { }
       this._renderWordList();
     }
+  }
+
+  _clearForm() {
+    ['dict-in-word', 'dict-in-trans', 'dict-in-t2', 'dict-in-cat', 'dict-in-ex'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    this._showToast('🧹 Formulario limpio');
   }
 
   /* ── Toast ──────────────────────────────────────────── */
@@ -652,18 +715,29 @@ export class DictionaryScene extends Phaser.Scene {
     // Add button
     document.getElementById('dict-add-btn')?.addEventListener('click', () => this._addWord());
 
-    // Toggle extras
-    document.getElementById('dict-form-toggle')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      const extras = document.getElementById('dict-form-extras');
-      if (extras) extras.classList.toggle('hidden');
-    });
+    // Clear button
+    document.getElementById('dict-clear-btn')?.addEventListener('click', () => this._clearForm());
+
+    // Dictionary Settings
+    document.getElementById('dict-settings-btn')?.addEventListener('click', () => this._openSettings());
 
     // Auto-translate on blur
-    document.getElementById('dict-in-word')?.addEventListener('blur', () => this._translateWord());
+    document.getElementById('dict-in-word')?.addEventListener('blur', (e) => {
+      if (e.target.value.trim()) this._translateWord('dict-in-word', 'de');
+    });
+    document.getElementById('dict-in-trans')?.addEventListener('blur', (e) => {
+      if (e.target.value.trim() && !document.getElementById('dict-in-word').value) {
+        this._translateWord('dict-in-trans', i18n.trans1 || 'en');
+      }
+    });
+    document.getElementById('dict-in-t2')?.addEventListener('blur', (e) => {
+      if (e.target.value.trim() && !document.getElementById('dict-in-word').value) {
+        this._translateWord('dict-in-t2', i18n.trans2 || 'es');
+      }
+    });
 
     // Enter in form inputs
-    ['dict-in-word', 'dict-in-trans', 'dict-in-cat', 'dict-in-ex'].forEach(id => {
+    ['dict-in-word', 'dict-in-trans', 'dict-in-t1', 'dict-in-t2', 'dict-in-cat', 'dict-in-ex'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', (e) => {
@@ -699,6 +773,68 @@ export class DictionaryScene extends Phaser.Scene {
     });
   }
 
+  /* ── Dictionary Settings Modal ─────────────────────── */
+
+  _openSettings() {
+    if (document.getElementById('dict-settings-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'dict-settings-modal';
+    modal.innerHTML = this._getSettingsHTML();
+    this._overlay.appendChild(modal);
+
+    // Bind save/cancel
+    modal.querySelector('#dict-settings-save').addEventListener('click', () => this._saveSettings());
+    modal.querySelector('#dict-settings-cancel').addEventListener('click', () => {
+      modal.remove();
+    });
+  }
+
+  _saveSettings() {
+    const t1 = document.getElementById('ds-trans1').value;
+    const t2 = document.getElementById('ds-trans2').value;
+
+    i18n.trans1 = t1 || null;
+    i18n.trans2 = t2 || null;
+    i18n.saveSettings();
+
+    // Reload UI
+    this._mountOverlay();
+    this._showToast('✔ Configuración guardada');
+  }
+
+  _getSettingsHTML() {
+    const langOptions = (selected, includeNone = false) => {
+      let html = '';
+      if (includeNone) {
+        html += `<option value="" ${!selected ? 'selected' : ''}>— ${i18n.t('settings_none').toUpperCase()} —</option>`;
+      }
+      for (const code of i18n.getAvailableLangs()) {
+        const info = i18n.getLangInfo(code);
+        html += `<option value="${code}" ${selected === code ? 'selected' : ''}>${info.flag} ${info.nativeName}</option>`;
+      }
+      return html;
+    };
+
+    return `
+      <div class="dict-modal-backdrop"></div>
+      <div class="dict-modal-content">
+        <div class="dict-modal-title">⚙️ TRADUCCIONES DEL DICCIONARIO</div>
+        <div class="dict-modal-fields">
+          <label>${i18n.t('settings_trans1')}</label>
+          <select id="ds-trans1" class="dict-select">${langOptions(i18n.trans1, true)}</select>
+          
+          <label>${i18n.t('settings_trans2')}</label>
+          <select id="ds-trans2" class="dict-select">${langOptions(i18n.trans2, true)}</select>
+        </div>
+        <div class="dict-modal-actions">
+          <button id="dict-settings-save" class="dict-modal-save">✔ ${i18n.t('dict_save').toUpperCase()}</button>
+          <button id="dict-settings-cancel" class="dict-modal-cancel">${i18n.t('dict_close').toUpperCase()}</button>
+        </div>
+      </div>
+    `;
+  }
+
   /* ── HTML template ──────────────────────────────────── */
 
   _getHTML() {
@@ -711,22 +847,24 @@ export class DictionaryScene extends Phaser.Scene {
             <span>${i18n.t('dict_title')}</span>
           </div>
           <div id="dict-stats">${i18n.t('dict_loading')}</div>
+          <button id="dict-settings-btn" class="dict-header-btn" title="Configuración de traducciones">⚙️</button>
           <button id="dict-back-btn" class="dict-back">✕ ${i18n.t('dict_close')}</button>
         </div>
 
         <!-- Form -->
         <div id="dict-form-section">
           <div id="dict-form-row">
-            <div class="dict-form-group">
+            <div class="dict-form-group" style="flex: 1.2;">
               <input id="dict-in-word" type="text" placeholder="${i18n.t('dict_ph_word')}" autocomplete="off" spellcheck="false" />
             </div>
-            <div class="dict-form-group">
-              <input id="dict-in-trans" type="text" placeholder="${i18n.t('dict_ph_trans')}" autocomplete="off" spellcheck="false" />
+            <div class="dict-form-group" style="flex: 1.5;">
+              <input id="dict-in-trans" type="text" placeholder="${i18n.trans1 ? i18n.getLangInfo(i18n.trans1).nativeName : i18n.t('dict_ph_trans')}" autocomplete="off" spellcheck="false" />
             </div>
-            <button id="dict-add-btn">✔ ${i18n.t('dict_btn_add')}</button>
-            <a href="#" id="dict-form-toggle" title="${i18n.t('dict_title_options')}">⚙️</a>
+            <button id="dict-add-btn" title="${i18n.t('dict_btn_add')}">✔</button>
+            <button id="dict-clear-btn" class="dict-btn-danger" title="${i18n.t('dict_btn_clear')}">✕</button>
           </div>
-          <div id="dict-form-extras" class="hidden">
+          <div id="dict-form-extras">
+            ${(i18n.trans2 && i18n.trans2 !== '') ? `<input id="dict-in-t2" type="text" placeholder="${i18n.getLangInfo(i18n.trans2).nativeName}" autocomplete="off" spellcheck="false" />` : ''}
             <input id="dict-in-cat" type="text" placeholder="${i18n.t('dict_ph_cat')}" autocomplete="off" spellcheck="false" />
             <input id="dict-in-ex" type="text" placeholder="${i18n.t('dict_ph_ex')}" autocomplete="off" spellcheck="false" />
           </div>
@@ -1036,13 +1174,25 @@ export class DictionaryScene extends Phaser.Scene {
         font-weight: bold;
         white-space: nowrap;
       }
-      .dict-trans-text {
+      .dict-trans-box {
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+        flex-wrap: wrap;
+        min-width: 0;
+      }
+      .dict-trans-main {
         color: #00ccff;
         font-size: 14px;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
       }
+      .dict-trans-sub {
+        font-size: 11px;
+        white-space: nowrap;
+        opacity: 0.8;
+      }
+      .dict-trans-sub.t1 { color: #aa88ff; }
+      .dict-trans-sub.t2 { color: #ff88aa; }
 
       .dict-badge {
         display: inline-block;
@@ -1243,6 +1393,49 @@ export class DictionaryScene extends Phaser.Scene {
         transition: background 0.15s;
       }
       .dict-modal-cancel:hover { background: #2a1010; }
+
+      .dict-btn-danger {
+        font-family: 'VT323', monospace;
+        font-size: 14px;
+        padding: 4px 10px;
+        background: #2a0a0a;
+        border: 1px solid #ff6666;
+        color: #ff6666;
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background 0.15s;
+        flex-shrink: 0;
+      }
+      .dict-btn-danger:hover { background: #4a1010; box-shadow: 0 0 6px #ff666688; }
+
+      .dict-header-btn {
+        background: none;
+        border: none;
+        color: #00ccff;
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s, transform 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+      }
+      .dict-header-btn:hover { opacity: 1; transform: rotate(30deg); }
+
+      .dict-select {
+        padding: 6px 8px;
+        background: #10102e;
+        border: 1px solid #2a2a55;
+        color: #e0e0f0;
+        font-family: 'VT323', monospace;
+        font-size: 15px;
+        border-radius: 2px;
+        outline: none;
+        width: 100%;
+        cursor: pointer;
+      }
+      .dict-select:focus { border-color: #00ccff; }
 
       /* ─── Responsive tweaks ─── */
       @media (max-width: 500px) {

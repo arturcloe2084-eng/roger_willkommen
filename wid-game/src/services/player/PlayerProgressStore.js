@@ -19,6 +19,52 @@ export const playerProgressStore = {
         flags: {},
     },
 
+    // ── Persistence ───────────────────────────────────────────
+    _storageKey: 'widPlayerProgress',
+
+    save() {
+        try {
+            const data = {
+                level: this.level,
+                xp: this.xp,
+                xpToNextLevel: this.xpToNextLevel,
+                learnedWords: this.learnedWords,
+                stats: this.stats,
+                story: this.story
+            };
+            localStorage.setItem(this._storageKey, JSON.stringify(data));
+        } catch (e) {
+            console.error('Error saving player progress:', e);
+        }
+    },
+
+    load() {
+        try {
+            const stored = localStorage.getItem(this._storageKey);
+            if (stored) {
+                const data = JSON.parse(stored);
+                this.level = data.level || 1;
+                this.xp = data.xp || 0;
+                this.xpToNextLevel = data.xpToNextLevel || 100;
+                this.learnedWords = data.learnedWords || [];
+                this.stats = data.stats || { correct: 0, partial: 0, incorrect: 0 };
+                this.story = {
+                    ...this.story,
+                    ...(data.story || {})
+                };
+                return true;
+            }
+        } catch (e) {
+            console.error('Error loading player progress:', e);
+        }
+        return false;
+    },
+
+    reset() {
+        localStorage.removeItem(this._storageKey);
+        window.location.reload();
+    },
+
     // ── Añadir XP y verificar nivel ───────────────────────────
     addXP(amount) {
         this.xp += amount;
@@ -26,8 +72,10 @@ export const playerProgressStore = {
             this.xp -= this.xpToNextLevel;
             this.level += 1;
             this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.5);
+            this.save();
             return true; // subió de nivel
         }
+        this.save();
         return false;
     },
 
@@ -36,6 +84,7 @@ export const playerProgressStore = {
         const already = this.learnedWords.find(w => w.word === word);
         if (!already) {
             this.learnedWords.push({ word, translation, learnedAt: Date.now() });
+            this.save();
             return true; // palabra nueva
         }
         return false;
@@ -46,6 +95,7 @@ export const playerProgressStore = {
         if (evaluation === 'correct') this.stats.correct++;
         if (evaluation === 'partial') this.stats.partial++;
         if (evaluation === 'incorrect') this.stats.incorrect++;
+        this.save();
     },
 
     // ── Historia / narrativa ───────────────────────────────────
@@ -105,6 +155,7 @@ export const playerProgressStore = {
         if (this.story.journal.length > 60) {
             this.story.journal.shift();
         }
+        this.save();
         return true;
     },
 
@@ -113,6 +164,10 @@ export const playerProgressStore = {
         return Math.min(100, Math.floor((this.xp / this.xpToNextLevel) * 100));
     },
 };
+
+// Auto-load on startup
+playerProgressStore.load();
+
 
 // Legacy alias kept to avoid breaking in-progress refs while refactoring.
 export const PlayerState = playerProgressStore;

@@ -65,26 +65,6 @@ export class MainMenuScene extends Phaser.Scene {
             fill: '#aaaaaa'
         }).setOrigin(0.5).setDepth(5);
 
-        // Translation 1 — small
-        const t1Sub = i18n.t1('menu_subtitle');
-        if (t1Sub) {
-            this.add.text(width / 2, subtitleY + 18, t1Sub, {
-                fontFamily: 'VT323',
-                fontSize: '14px',
-                fill: '#777777'
-            }).setOrigin(0.5).setDepth(5);
-        }
-
-        // Translation 2 — smaller
-        const t2Sub = i18n.t2('menu_subtitle');
-        if (t2Sub) {
-            this.add.text(width / 2, subtitleY + (t1Sub ? 32 : 18), t2Sub, {
-                fontFamily: 'VT323',
-                fontSize: '12px',
-                fill: '#555555'
-            }).setOrigin(0.5).setDepth(5);
-        }
-
         // ═══════════════════════════════════════════════════
         //  ESTADÍSTICAS (si hay progreso)
         // ═══════════════════════════════════════════════════
@@ -137,20 +117,17 @@ export class MainMenuScene extends Phaser.Scene {
             () => this._openSettings()
         );
 
-        // ═══ Indicador de idiomas activos ═══
+        // ═══ Indicador de idioma activo ═══
         const langIndicatorY = btnCenterY + btnSpacing + 58;
-        const langParts = [];
-        langParts.push(`🎯 ${i18n.getLangInfo(i18n.gameLang).flag} ${i18n.getLangInfo(i18n.gameLang).nativeName}`);
-        if (i18n.trans1) langParts.push(`${i18n.getLangInfo(i18n.trans1).flag}`);
-        if (i18n.trans2) langParts.push(`${i18n.getLangInfo(i18n.trans2).flag}`);
+        const langInfo = i18n.getLangInfo(i18n.gameLang);
 
-        this.add.text(width / 2, langIndicatorY, langParts.join('  '), {
+        this.add.text(width / 2, langIndicatorY, `🎯 ${langInfo.flag} ${langInfo.nativeName}`, {
             fontFamily: 'VT323',
             fontSize: '16px',
             fill: '#555566'
         }).setOrigin(0.5).setDepth(5);
 
-        // ═══ Quote at bottom (with translations) ═══
+        // ═══ Quote at bottom ═══
         const quoteY = height - 35;
         this.add.text(width / 2, quoteY, i18n.t('menu_quote'), {
             fontFamily: 'VT323',
@@ -160,14 +137,6 @@ export class MainMenuScene extends Phaser.Scene {
             wordWrap: { width: width - 40 },
             align: 'center'
         }).setOrigin(0.5).setDepth(5);
-
-        const t1Quote = i18n.t1('menu_quote');
-        if (t1Quote) {
-            this.add.text(width / 2, quoteY + 16, t1Quote, {
-                fontFamily: 'VT323', fontSize: '11px', fill: '#334433',
-                fontStyle: 'italic', wordWrap: { width: width - 40 }, align: 'center'
-            }).setOrigin(0.5).setDepth(5);
-        }
 
         // Version
         this.add.text(width - 10, height - 10, 'v0.5.0', {
@@ -220,23 +189,6 @@ export class MainMenuScene extends Phaser.Scene {
                 targets: text, alpha: 0.4,
                 duration: 600, yoyo: true, loop: -1
             });
-        }
-
-        // Translation subtitles under button
-        const t1 = i18n.t1(`menu_${key}`);
-        const t2 = i18n.t2(`menu_${key}`);
-
-        let subtitleY = y + h / 2 + 10;
-        if (t1) {
-            this.add.text(x, subtitleY, t1, {
-                fontFamily: 'VT323', fontSize: '12px', fill: '#666666'
-            }).setOrigin(0.5).setDepth(5);
-            subtitleY += 12;
-        }
-        if (t2) {
-            this.add.text(x, subtitleY, t2, {
-                fontFamily: 'VT323', fontSize: '10px', fill: '#444444'
-            }).setOrigin(0.5).setDepth(5);
         }
 
         // Interactive
@@ -335,17 +287,9 @@ export class MainMenuScene extends Phaser.Scene {
         // Save
         el.querySelector('#settings-save-btn')?.addEventListener('click', () => {
             const gameLang = document.getElementById('settings-game-lang')?.value || 'de';
-            const trans1 = document.getElementById('settings-trans1')?.value || '';
-            const trans2 = document.getElementById('settings-trans2')?.value || '';
-
             i18n.gameLang = gameLang;
-            i18n.trans1 = trans1 || null;
-            i18n.trans2 = trans2 || null;
             i18n.saveSettings();
-
             this._closeSettings();
-
-            // Re-create the scene to apply language changes
             this.scene.restart();
         });
 
@@ -354,11 +298,8 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     _getSettingsHTML() {
-        const langOptions = (selected, includeNone = false) => {
+        const langOptions = (selected) => {
             let html = '';
-            if (includeNone) {
-                html += `<option value="" ${!selected ? 'selected' : ''}>${i18n.t('settings_none')}</option>`;
-            }
             for (const [code, info] of Object.entries(LANGUAGES)) {
                 html += `<option value="${code}" ${selected === code ? 'selected' : ''}>${info.flag} ${info.nativeName}</option>`;
             }
@@ -373,25 +314,12 @@ export class MainMenuScene extends Phaser.Scene {
                 <div class="settings-group">
                     <label class="settings-label">${i18n.t('settings_game_lang')}</label>
                     <select id="settings-game-lang">${langOptions(i18n.gameLang)}</select>
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">${i18n.t('settings_trans1')}</label>
-                    <select id="settings-trans1">${langOptions(i18n.trans1, true)}</select>
-                    <div class="settings-hint">Abc — texto pequeño bajo el principal</div>
-                </div>
-
-                <div class="settings-group">
-                    <label class="settings-label">${i18n.t('settings_trans2')}</label>
-                    <select id="settings-trans2">${langOptions(i18n.trans2, true)}</select>
-                    <div class="settings-hint">abc — texto aún más pequeño</div>
+                    <div class="settings-hint">Idioma de la interfaz, botones y menús.</div>
                 </div>
 
                 <div class="settings-preview">
-                    <div class="settings-preview-title">Vista previa:</div>
+                    <div class="settings-preview-title">${i18n.t('settings_preview')}</div>
                     <div id="preview-main" class="settings-preview-main">📖 WÖRTERBUCH</div>
-                    <div id="preview-t1" class="settings-preview-t1">📖 DICTIONARY</div>
-                    <div id="preview-t2" class="settings-preview-t2">📖 DICCIONARIO</div>
                 </div>
 
                 <div class="settings-actions">
@@ -406,41 +334,16 @@ export class MainMenuScene extends Phaser.Scene {
         const PREVIEW_KEY = 'menu_dictionary';
         const updatePreview = () => {
             const gameLang = document.getElementById('settings-game-lang')?.value || 'de';
-            const trans1 = document.getElementById('settings-trans1')?.value || '';
-            const trans2 = document.getElementById('settings-trans2')?.value || '';
-
             const mainEl = document.getElementById('preview-main');
-            const t1El = document.getElementById('preview-t1');
-            const t2El = document.getElementById('preview-t2');
 
             if (mainEl) {
                 const info = LANGUAGES[gameLang];
                 const flag = info?.flag || '🌐';
                 mainEl.textContent = `${flag} ${this._previewString(PREVIEW_KEY, gameLang)}`;
             }
-            if (t1El) {
-                if (trans1 && trans1 !== gameLang) {
-                    const info = LANGUAGES[trans1];
-                    t1El.textContent = `${info?.flag || ''} ${this._previewString(PREVIEW_KEY, trans1)}`;
-                    t1El.style.display = '';
-                } else {
-                    t1El.style.display = 'none';
-                }
-            }
-            if (t2El) {
-                if (trans2 && trans2 !== gameLang) {
-                    const info = LANGUAGES[trans2];
-                    t2El.textContent = `${info?.flag || ''} ${this._previewString(PREVIEW_KEY, trans2)}`;
-                    t2El.style.display = '';
-                } else {
-                    t2El.style.display = 'none';
-                }
-            }
         };
 
         document.getElementById('settings-game-lang')?.addEventListener('change', updatePreview);
-        document.getElementById('settings-trans1')?.addEventListener('change', updatePreview);
-        document.getElementById('settings-trans2')?.addEventListener('change', updatePreview);
     }
 
     _previewString(key, lang) {

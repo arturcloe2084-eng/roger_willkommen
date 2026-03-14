@@ -12,18 +12,18 @@
 
 // Available languages and their labels
 export const LANGUAGES = {
-    de: { label: 'Deutsch', flag: '🇩🇪', nativeName: 'Deutsch' },
-    en: { label: 'English', flag: '🇬🇧', nativeName: 'English' },
-    es: { label: 'Español', flag: '🇪🇸', nativeName: 'Español' },
-    fr: { label: 'Français', flag: '🇫🇷', nativeName: 'Français' },
-    pt: { label: 'Português', flag: '🇧🇷', nativeName: 'Português' },
-    it: { label: 'Italiano', flag: '🇮🇹', nativeName: 'Italiano' },
-    cs: { label: 'Čeština', flag: '🇨🇿', nativeName: 'Čeština' },
-    pl: { label: 'Polski', flag: '🇵🇱', nativeName: 'Polski' },
-    tr: { label: 'Türkçe', flag: '🇹🇷', nativeName: 'Türkçe' },
-    ar: { label: 'العربية', flag: '🇸🇦', nativeName: 'العربية' },
-    uk: { label: 'Українська', flag: '🇺🇦', nativeName: 'Українська' },
-    ru: { label: 'Русский', flag: '🇷🇺', nativeName: 'Русский' },
+    de: { label: 'DE', flag: '🇩🇪', nativeName: 'Deutsch' },
+    en: { label: 'EN', flag: '🇬🇧', nativeName: 'Englisch' },
+    es: { label: 'ES', flag: '🇪🇸', nativeName: 'Spanisch' },
+    fr: { label: 'FR', flag: '🇫🇷', nativeName: 'Französisch' },
+    pt: { label: 'PT', flag: '🇧🇷', nativeName: 'Portugiesisch' },
+    it: { label: 'IT', flag: '🇮🇹', nativeName: 'Italienisch' },
+    cs: { label: 'CS', flag: '🇨🇿', nativeName: 'Tschechisch' },
+    pl: { label: 'PL', flag: '🇵🇱', nativeName: 'Polnisch' },
+    tr: { label: 'TR', flag: '🇹🇷', nativeName: 'Türkisch' },
+    ar: { label: 'AR', flag: '🇸🇦', nativeName: 'Arabisch' },
+    uk: { label: 'UK', flag: '🇺🇦', nativeName: 'Ukrainisch' },
+    ru: { label: 'RU', flag: '🇷🇺', nativeName: 'Russisch' },
 };
 
 // All translatable strings — key: { de: ..., en: ..., es: ..., ... }
@@ -198,7 +198,7 @@ const STRINGS = {
         ru: 'Перевод 2 (мельче)',
     },
     settings_none: {
-        de: '— Keine —',
+        de: 'keiner',
         en: '— None —',
         es: '— Ninguno —',
         fr: '— Aucune —',
@@ -273,7 +273,15 @@ const STRINGS = {
     dict_sort_cat: { de: 'Nach Kategorie', en: 'By category', es: 'Por categoría' },
     dict_sort_pinned: { de: 'Lernwörter', en: 'Pinned words', es: 'Chinches primero' },
     dict_import: { de: 'Importieren', en: 'Import', es: 'Importar' },
-    dict_export: { de: 'Exportieren', en: 'Export', es: 'Exportar' }
+    dict_export: { de: 'Exportieren', en: 'Export', es: 'Exportar' },
+    menu_back: { de: 'MENÜ', en: 'MENU', es: 'MENÚ' },
+    dict_stats_words: { de: 'Wörter', en: 'words', es: 'palabras' },
+    dict_stats_mine: { de: 'eigene', en: 'mine', es: 'mías' },
+    dict_stats_study: { de: 'für Lernwörter', en: 'to study', es: 'para estudiar' },
+    dict_stats_filtered: { de: 'gefiltert', en: 'filtered', es: 'filtradas' },
+    dict_label_main: { de: 'Haupt-Übersetzung', en: 'Main Translation', es: 'Traducción Principal' },
+    dict_save: { de: 'Speichern', en: 'Save', es: 'Guardar' },
+    dict_btn_clear: { de: 'LEEREN', en: 'CLEAR', es: 'LIMPIAR' }
 };
 
 /**
