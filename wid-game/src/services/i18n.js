@@ -281,7 +281,21 @@ const STRINGS = {
     dict_stats_filtered: { de: 'gefiltert', en: 'filtered', es: 'filtradas' },
     dict_label_main: { de: 'Haupt-Übersetzung', en: 'Main Translation', es: 'Traducción Principal' },
     dict_save: { de: 'Speichern', en: 'Save', es: 'Guardar' },
-    dict_btn_clear: { de: 'LEEREN', en: 'CLEAR', es: 'LIMPIAR' }
+    dict_btn_clear: { de: 'LEEREN', en: 'CLEAR', es: 'LIMPIAR' },
+
+    // ── Categories ───────────────────────
+    cat_noun: { de: 'Substantiv', en: 'Noun', es: 'Sustantivo', cs: 'Podstatné jméno', ru: 'Существительное' },
+    cat_verb: { de: 'Verb', en: 'Verb', es: 'Verbo', cs: 'Sloveso', ru: 'Глагол' },
+    cat_adj: { de: 'Adjektiv', en: 'Adjective', es: 'Adjetivo', cs: 'Přídavné jméno', ru: 'Прилагательное' },
+    cat_adv: { de: 'Adverb', en: 'Adverb', es: 'Adverbio', cs: 'Příslovce', ru: 'Наречие' },
+    cat_pron: { de: 'Pronomen', en: 'Pronoun', es: 'Pronombre', cs: 'Zájmeno', ru: 'Местоимение' },
+    cat_prep: { de: 'Präposition', en: 'Preposition', es: 'Preposición', cs: 'Předložka', ru: 'Предлог' },
+    cat_conj: { de: 'Konjunktion', en: 'Conjunction', es: 'Conjunción', cs: 'Spojka', ru: 'Союз' },
+    cat_int: { de: 'Interjektion', en: 'Interjection', es: 'Interjección', cs: 'Citoslovce', ru: 'Междометие' },
+    cat_art: { de: 'Artikel', en: 'Article', es: 'Artículo', cs: 'Člen', ru: 'Артикль' },
+    cat_phrase: { de: 'Phrase', en: 'Phrase', es: 'Frase', cs: 'Fráze', ru: 'Фраза' },
+    cat_expr: { de: 'Ausdruck', en: 'Expression', es: 'Expresión', cs: 'Výraz', ru: 'Выражение' },
+    cat_gen: { de: 'Allgemein', en: 'General', es: 'General', cs: 'Obecné', ru: 'Общее' }
 };
 
 /**
@@ -364,6 +378,55 @@ class I18nManager {
      */
     getAvailableLangs() {
         return Object.keys(LANGUAGES);
+    }
+
+    /**
+     * Translates a category name to the current game language.
+     * Attempts to normalize the input name first.
+     */
+    tCategory(catName) {
+        if (!catName) return this.t('cat_gen');
+
+        const normalized = catName.toLowerCase().trim();
+
+        // Reverse map to find the category key
+        const categoryKeys = [
+            'cat_noun', 'cat_verb', 'cat_adj', 'cat_adv', 'cat_pron',
+            'cat_prep', 'cat_conj', 'cat_int', 'cat_art', 'cat_phrase',
+            'cat_expr', 'cat_gen'
+        ];
+
+        for (const key of categoryKeys) {
+            const entry = STRINGS[key];
+            if (!entry) continue;
+
+            // Check if the input matches any translation in the entry
+            for (const langCode in entry) {
+                if (entry[langCode].toLowerCase() === normalized) {
+                    return this.t(key);
+                }
+            }
+        }
+
+        // Hardcoded common German variations if not in entry
+        const deMaps = {
+            'substantiv': 'cat_noun', 'nomen': 'cat_noun', 'hauptwort': 'cat_noun',
+            'verb': 'cat_verb', 'zeitwort': 'cat_verb',
+            'adjektiv': 'cat_adj', 'eigenschaftswort': 'cat_adj',
+            'adverb': 'cat_adv', 'umstandswort': 'cat_adv',
+            'artikel': 'cat_art', 'begleiter': 'cat_art',
+            'pronomen': 'cat_pron', 'fürwort': 'cat_pron',
+            'präposition': 'cat_prep', 'verhältniswort': 'cat_prep',
+            'konjunktion': 'cat_conj', 'bindewort': 'cat_conj',
+            'interjektion': 'cat_int', 'ausrufewort': 'cat_int',
+            'phrase': 'cat_phrase', 'ausdruck': 'cat_expr',
+            'general': 'cat_gen', 'allgemein': 'cat_gen'
+        };
+
+        if (deMaps[normalized]) return this.t(deMaps[normalized]);
+
+        // Fallback: return as is if no match found
+        return catName;
     }
 }
 

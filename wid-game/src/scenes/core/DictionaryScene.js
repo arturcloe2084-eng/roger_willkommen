@@ -196,7 +196,7 @@ export class DictionaryScene extends Phaser.Scene {
               ${w.translation2 ? `<span class="dict-trans-sub t2">${this._esc(w.translation2)}</span>` : ''}
             </div>
           </div>
-          <span class="dict-badge">${this._esc(w.category || 'general')}</span>
+          <span class="dict-badge">${this._esc(i18n.tCategory(w.category))}</span>
           <div class="dict-card-actions">
             <button class="dict-icon-btn dict-speak-btn" data-speak="${this._escAttr(w.word)}" title="Escuchar pronunciación">🔊</button>
             <button class="dict-icon-btn dict-rec-btn ${hasRec ? 'has-rec' : ''}" data-rec="${this._escAttr(w.word)}" title="${hasRec ? 'Tiene grabación — click para grabar de nuevo' : 'Grabar mi pronunciación'}">🎙️</button>
@@ -411,7 +411,7 @@ export class DictionaryScene extends Phaser.Scene {
           ${lang2 ? `<label>${lang2}</label><input id="edit-t2" type="text" value="${this._escAttr(w.translation2 || '')}" />` : ''}
           
           <label>${i18n.t('dict_ph_cat')}</label>
-          <input id="edit-cat" type="text" value="${this._escAttr(w.category || 'general')}" />
+          <input id="edit-cat" type="text" value="${this._escAttr(i18n.tCategory(w.category))}" />
           
           <label>${i18n.t('dict_ph_ex')}</label>
           <input id="edit-ex" type="text" value="${this._escAttr(w.example || '')}" />
@@ -569,7 +569,7 @@ export class DictionaryScene extends Phaser.Scene {
         t2El.value = data.translation2 || '';
       }
 
-      if (catEl) catEl.value = data.category || 'general';
+      if (catEl) catEl.value = i18n.tCategory(data.category);
       if (exEl) exEl.value = data.example || '';
 
       this._showToast('✨ Traducida automáticamente');
