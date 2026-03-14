@@ -1,0 +1,381 @@
+```
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                  🎓 DICCIONARIO PERSISTENTE                              ║
+║                        GUÍA DE INICIO RÁPIDO                             ║
+║                                                                            ║
+║         ¡El diccionario está completamente listo para usar!              ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    ⚡ 3 PASOS PARA EMPEZAR AHORA MISMO                    │
+└────────────────────────────────────────────────────────────────────────────┘
+
+    PASO 1: ABRE EL JUEGO
+    ├─ Abre: wid-game/index.html en el navegador
+    └─ Espera a que cargue
+
+    PASO 2: PRESIONA D
+    ├─ En el menú principal
+    ├─ Verás: "📖 VER DICCIONARIO"
+    └─ Se abre la interfaz del diccionario
+
+    PASO 3: ¡LISTO!
+    ├─ Busca palabras
+    ├─ Agrega nuevas
+    └─ Los datos se guardan automáticamente
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         🎯 LO QUE PUEDES HACER                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ VER PALABRAS
+   └─ Base de datos con 150+ palabras en alemán
+   └─ Traducción, categoría y ejemplo
+   └─ Navegación paginada (8 por página)
+
+✅ BUSCAR
+   └─ Escribe para buscar en tiempo real
+   └─ Busca por palabra o traducción
+   └─ Filtra por categoría
+
+✅ AGREGAR PALABRAS
+   └─ Llena el formulario:
+      ├─ Palabra alemana
+      ├─ Traducción
+      ├─ Categoría
+      └─ Ejemplo (opcional)
+   └─ Haz click en "AGREGAR"
+   └─ ¡Se guardan automáticamente!
+
+✅ IMPORTAR LISTAS
+   └─ Opción 1: Web (diccionario-gestor.html)
+      ├─ Abre: wid-game/public/diccionario-gestor.html
+      ├─ Copia PALABRAS_EJEMPLO.csv
+      ├─ Pega en el área CSV
+      └─ Haz click "IMPORTAR"
+   
+   └─ Opción 2: Consola (F12)
+      ├─ Abre: Herramientas del navegador (F12)
+      ├─ Ve a: Pestaña "Console"
+      ├─ Pega:
+      │   import { DictionaryHelper } from './src/services/DictionaryHelper.js'
+      │   await DictionaryHelper.loadStarterWords()
+      └─ Presiona Enter
+
+✅ EXPORTAR/DESCARGAR
+   └─ Desde diccionario-gestor.html
+   └─ Botones de descarga
+   └─ Formatos: JSON o CSV
+
+✅ DATOS PERSISTENTES
+   └─ Se guardan en el navegador (localStorage)
+   └─ No se borran al cerrar
+   └─ No se borran al reiniciar el juego
+   └─ ¡Siempre están disponibles!
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    📁 ARCHIVOS IMPORTANTES QUE NECESITAS                  │
+└────────────────────────────────────────────────────────────────────────────┘
+
+🎮 JUEGO:
+   ├─ wid-game/index.html                    ← Abre para jugar
+
+🛠️ HERRAMIENTAS:
+   ├─ wid-game/public/diccionario-gestor.html ← Panel de control web
+   └─ PALABRAS_EJEMPLO.csv                   ← 150+ palabras listas
+
+📚 DOCUMENTACIÓN (LÉEME):
+   ├─ README_DICCIONARIO.md                  ← ⭐ COMIENZA AQUÍ (5 min)
+   ├─ DICCIONARIO_GUIA.md                    ← Guía paso a paso
+   ├─ INDICE.md                              ← Mapa de navegación
+   └─ COMPLETADO.md                          ← Resumen final
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                       🎬 EJEMPLO: AGREGAR TU PRIMERA PALABRA              │
+└────────────────────────────────────────────────────────────────────────────┘
+
+1. ABRE EL JUEGO
+   └─ wid-game/index.html
+
+2. PRESIONA D EN EL MENÚ
+   └─ Se abre el diccionario
+
+3. RELLENA EL FORMULARIO "AGREGAR PALABRA":
+   
+   ┌──────────────────────────────────────┐
+   │ Palabra:       Danke                 │
+   │ Traducción:    Gracias               │
+   │ Categoría:     cortesía              │
+   │ Ejemplo:       Danke schön!          │
+   └──────────────────────────────────────┘
+
+4. HAZ CLICK EN "AGREGAR"
+   └─ La palabra aparece en la lista
+
+5. CIERRA Y REABRE EL JUEGO
+   └─ ¡La palabra sigue ahí! ✅
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    🚀 EJEMPLO: IMPORTAR 150+ PALABRAS                     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+OPCIÓN A: Desde la Web (Más Fácil)
+───────────────────────────────────
+
+1. Abre: wid-game/public/diccionario-gestor.html
+   └─ En cualquier navegador
+
+2. Copia todo el contenido de: PALABRAS_EJEMPLO.csv
+   └─ Son ~150 palabras en formato CSV
+
+3. En diccionario-gestor.html:
+   ├─ Ve a sección "📥 Importar CSV"
+   ├─ Pega en el textarea
+   └─ Haz click "Importar desde CSV"
+
+4. ¡Listo! Verás: "✅ Importadas 150 palabras"
+
+5. Abre el juego (D en menú)
+   └─ ¡Todas las palabras están disponibles!
+
+
+OPCIÓN B: Desde la Consola (Para Programadores)
+─────────────────────────────────────────────────
+
+1. Abre el juego en el navegador
+
+2. Presiona F12 (Herramientas del Navegador)
+   └─ Se abre la consola de desarrollador
+
+3. Ve a la pestaña "Console"
+
+4. Copia y pega esto:
+
+   import { DictionaryHelper } from './src/services/DictionaryHelper.js'
+   await DictionaryHelper.loadStarterWords()
+
+5. Presiona Enter
+
+6. Verás: "✅ Cargadas 10 palabras de inicio"
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    ❓ PREGUNTAS MÁS FRECUENTES                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+P: ¿Dónde se guardan las palabras?
+R: En localStorage del navegador (automático, no tienes que hacer nada)
+
+P: ¿Se borran si cierro el navegador?
+R: ¡NO! Se guardan permanentemente en el navegador
+
+P: ¿Se borran si limpio la caché?
+R: Sí, por eso es buena idea hacer backup (exportar)
+
+P: ¿Puedo tener palabras de múltiples categorías?
+R: ¡Sí! Puedes crear la categoría que quieras
+
+P: ¿Cuántas palabras puedo agregar?
+R: Muchas (~50,000 palabras) gracias a localStorage
+
+P: ¿Cómo hago backup?
+R: Abre diccionario-gestor.html y haz click en "Descargar"
+
+P: ¿Necesito copiar/pegar cada palabra?
+R: No, puedes importar listas completas en CSV
+
+P: ¿Funciona sin internet?
+R: Sí, todo es local (offline)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                     📊 LAS 10 PRIMERAS PALABRAS                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Para empezar, aquí están 10 palabras comunes:
+
+  1. Hallo          →  Hola              [saludo]
+  2. Guten Morgen   →  Buenos días       [saludo]
+  3. Danke          →  Gracias           [cortesía]
+  4. Bitte          →  Por favor         [cortesía]
+  5. Ja             →  Sí                [básico]
+  6. Nein           →  No                [básico]
+  7. Entschuldigung →  Perdón            [cortesía]
+  8. Wie geht es?   →  ¿Cómo estás?      [comunicación]
+  9. Ich verstehe   →  Entiendo          [comunicación]
+ 10. Auf Wiedersehen→  Adiós             [saludo]
+
+¿Quieres más? Importa PALABRAS_EJEMPLO.csv (150+ palabras)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                      🎯 FLUJO RECOMENDADO DE HOY                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+AHORA (5 minutos)
+├─ Abre el juego
+├─ Presiona D
+└─ Explora el diccionario
+
+EN 30 MINUTOS (Importar palabras)
+├─ Abre diccionario-gestor.html
+├─ Importa PALABRAS_EJEMPLO.csv
+└─ Verifica que aparecen en el juego
+
+HOY (Organizar)
+├─ Abre diccionario en el juego (D)
+├─ Filtra por categorías
+├─ Agrega palabras específicas que necesites
+└─ Explora todas las funciones
+
+MAÑANA (Base para diálogos)
+├─ Organiza palabras por hito/día
+├─ Crea guiones teatrales
+└─ Vincula con conversaciones
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        💡 TRUCOS Y CONSEJOS                               │
+└────────────────────────────────────────────────────────────────────────────┘
+
+💡 BÚSQUEDA RÁPIDA
+   └─ Escribe en el campo de búsqueda
+   └─ Se actualiza automáticamente
+   └─ Limpia con el botón X
+
+💡 FILTRAR POR CATEGORÍA
+   └─ Haz click en [TODAS] para ver todas
+   └─ O selecciona una categoría específica
+   └─ Combinable con búsqueda
+
+💡 AGREGAR PALABRAS RÁPIDAMENTE
+   └─ Rellena palabra y traducción
+   └─ Categoría es opcional (por defecto: general)
+   └─ Ejemplo es opcional
+
+💡 HACER BACKUP
+   └─ Abre diccionario-gestor.html
+   └─ Haz click en "Descargar"
+   └─ Guarda el archivo
+
+💡 COMPARTIR DICCIONARIO
+   └─ Exporta como JSON
+   └─ Envía el archivo
+   └─ Otro usuario lo importa
+
+💡 VER TODO EN TABLA
+   └─ En diccionario-gestor.html
+   └─ Haz click "Ver tabla"
+   └─ Ve todos los datos en formato table
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                      🔗 PRÓXIMA FASE: CONVERSACIONES                      │
+└────────────────────────────────────────────────────────────────────────────┘
+
+El diccionario será la BASE para:
+
+📚 GUIONES TEATRALES
+   └─ Cada palabra → Diálogo específico
+   └─ Conversaciones entre NPC
+   └─ Estructura como obra de teatro
+
+🎭 HITOS DEL JUEGO
+   └─ Día 1: Saludos y presentación
+   └─ Día 2: Trámites y documentos
+   └─ ... hasta Día 30
+   └─ Cada día usa vocabulario específico
+
+🎮 GAMIFICACIÓN
+   └─ Palabras aprendidas = XP
+   └─ Categorías completadas = Logros
+   └─ Progreso visual en el diccionario
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                    🚨 SI ALGO NO FUNCIONA                                 │
+└────────────────────────────────────────────────────────────────────────────┘
+
+PROBLEMA: El diccionario no abre (D no funciona)
+SOLUCIÓN:
+  1. Abre la consola (F12)
+  2. Busca errores en rojo
+  3. Limpia caché (Ctrl+Shift+R)
+  4. Recarga la página
+
+PROBLEMA: Las palabras no se guardan
+SOLUCIÓN:
+  1. Verifica que localStorage está habilitado
+  2. Abre diccionario-gestor.html
+  3. Ve si aparecen las palabras ahí
+  4. En consola: JSON.parse(localStorage.getItem('customDictionaryWords'))
+
+PROBLEMA: No puedo importar CSV
+SOLUCIÓN:
+  1. Verifica formato: palabra,traducción,categoría,ejemplo
+  2. Una palabra por línea
+  3. Sin saltos de línea extra
+  4. Intenta con PALABRAS_EJEMPLO.csv primero
+
+PROBLEMA: Diccionario vacío
+SOLUCIÓN:
+  1. En diccionario-gestor.html
+  2. Haz click "Cargar Palabras de Inicio"
+  3. Verás 10 palabras
+  4. Luego importa más
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         📞 AYUDA Y RECURSOS                               │
+└────────────────────────────────────────────────────────────────────────────┘
+
+📖 DOCUMENTACIÓN:
+   ├─ README_DICCIONARIO.md      ← ⭐ Lee primero (guía rápida)
+   ├─ DICCIONARIO_GUIA.md        ← Paso a paso completo
+   ├─ DICCIONARIO_README.md      ← Referencia técnica
+   ├─ INDICE.md                  ← Mapa de navegación
+   └─ COMPLETADO.md              ← Resumen final
+
+🛠️ HERRAMIENTAS:
+   ├─ wid-game/public/diccionario-gestor.html  ← Panel web
+   └─ Consola (F12) del navegador              ← Debug
+
+💻 CÓDIGO:
+   ├─ src/services/DictionaryManager.js  ← API principal
+   ├─ src/scenes/core/DictionaryScene.js ← Interfaz
+   └─ src/services/DictionaryHelper.js   ← Utilidades
+
+📊 DATOS:
+   ├─ PALABRAS_EJEMPLO.csv               ← 150+ palabras
+   └─ wid-game/public/data/vocabulary.json ← Base (no editar)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│                      ✨ RESUMEN DE CAPACIDADES                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ Diccionario visible en menú (D)
+✅ Palabras persistentes (no se borran)
+✅ Búsqueda en tiempo real
+✅ Filtro por categorías
+✅ Agregar palabras manualmente
+✅ Eliminar palabras personalizadas
+✅ Herramienta web de administración
+✅ Importar desde CSV
+✅ Exportar como JSON/CSV
+✅ Estadísticas en vivo
+✅ 150+ palabras de ejemplo
+✅ Documentación completa
+✅ Sin errores de compilación
+
+═════════════════════════════════════════════════════════════════════════════
+
+                           🎓 ¡AHORA ES TU TURNO!
+
+               Abre el juego, presiona D y ¡comienza a aprender!
+
+                  El diccionario está completamente listo.
+                 Solo necesita ser llenado con tus palabras.
+
+                    🎉 ¡Viel Erfolg beim Lernen!
+
+═════════════════════════════════════════════════════════════════════════════
+
+Próximo paso: Lee README_DICCIONARIO.md (5 minutos)
+             Luego: Abre el juego y presiona D
+
+```

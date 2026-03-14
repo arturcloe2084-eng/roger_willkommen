@@ -1,0 +1,224 @@
+/**
+ * Palabras de ejemplo para iniciar el diccionario
+ * 
+ * Copia y pega estas palabras en la herramienta web
+ * o importa con: DictionaryHelper.importBatch([...])
+ * 
+ * Formato CSV (para diccionario-gestor.html):
+ * Copia las líneas de abajo en el textarea de "Importar CSV"
+ */
+
+// ===== SALUDOS Y CORTESÍA =====
+Hallo,Hola,saludo,Hallo, ich bin neu.
+Guten Morgen,Buenos días,saludo,Guten Morgen, Herr Schmidt!
+Guten Tag,Buenos días/Buenas tardes,saludo,Guten Tag!
+Guten Abend,Buenas noches,saludo,Guten Abend, meine Damen!
+Gute Nacht,Buenas noches,saludo,Gute Nacht!
+Auf Wiedersehen,Adiós,saludo,Auf Wiedersehen!
+Auf Wiederhören,Adiós (por teléfono),saludo,Auf Wiederhören!
+Tschüss,Adiós (informal),saludo,Tschüss, bis morgen!
+Servus,Hola/Adiós (bavaro),saludo,Servus, wie geht's?
+
+Danke,Gracias,cortesía,Danke schön!
+Danke schön,Muchas gracias,cortesía,Danke schön für deine Hilfe!
+Bitte,Por favor / De nada,cortesía,Bitte schön.
+Bitte schön,De nada / Por favor,cortesía,Bitte schön, gerne!
+Gerne,Con gusto,cortesía,Gerne, sehr gerne!
+Entschuldigung,Perdón / Disculpe,cortesía,Entschuldigung, wo ist die Bushaltestelle?
+Entschuldigen Sie,Disculpe (formal),cortesía,Entschuldigen Sie, ich habe nicht verstanden.
+Verzeihung,Perdón / Disculpe,cortesía,Verzeihung, ich bin zu spät.
+
+// ===== COMUNICACIÓN BÁSICA =====
+Ja,Sí,básico,Ja, das stimmt.
+Nein,No,básico,Nein, das ist falsch.
+Vielleicht,Quizá / Tal vez,básico,Vielleicht morgen.
+Genau,Exacto / Correcto,comunicación,Genau, du hast recht!
+Okay,De acuerdo,comunicación,Okay, verstanden.
+
+Wie heißt du?,¿Cómo te llamas?,comunicación,Wie heißt du, bitte?
+Ich heiße...,Me llamo...,comunicación,Ich heiße Roger.
+Ich bin...,Soy...,comunicación,Ich bin aus Spanien.
+
+Wie geht es dir?,¿Cómo estás?,comunicación,Wie geht es dir heute?
+Wie geht es dir?,¿Cómo le va? (formal),comunicación,Wie geht es dir?
+Mir geht es gut,Me va bien,comunicación,Mir geht es gut, danke!
+Mir geht es nicht so gut,No me va muy bien,comunicación,Mir geht es nicht so gut heute.
+
+Ich verstehe,Entiendo,comunicación,Ich verstehe das.
+Ich verstehe nicht,No entiendo,comunicación,Entschuldigung, ich verstehe nicht.
+Können Sie langsamer sprechen?,¿Puede hablar más lentamente?,comunicación,Können Sie langsamer sprechen?
+Können Sie das wiederholen?,¿Puede repetir eso?,comunicación,Können Sie das wiederholen?
+Was bedeutet das?,¿Qué significa eso?,comunicación,Was bedeutet das auf Deutsch?
+Wie sagt man...?,¿Cómo se dice...?,comunicación,Wie sagt man 'gracias' auf Deutsch?
+
+Sprechen Sie Englisch?,¿Habla inglés?,comunicación,Sprechen Sie Englisch?
+Ich spreche kein Deutsch,No hablo alemán,comunicación,Ich spreche kein Deutsch, tut mir leid.
+Ich lerne Deutsch,Estoy aprendiendo alemán,comunicación,Ich lerne Deutsch.
+
+// ===== PREGUNTAS ÚTILES =====
+Können Sie mir helfen?,¿Puede ayudarme?,ayuda,Können Sie mir helfen, bitte?
+Wo ist...?,¿Dónde está...?,preguntas,Wo ist die Bushaltestelle?
+Wo ist die Toilette?,¿Dónde está el baño?,preguntas,Wo ist die Toilette, bitte?
+Wo ist der Bahnhof?,¿Dónde está la estación?,preguntas,Wo ist der Bahnhof?
+Wie komme ich zu...?,¿Cómo llego a...?,preguntas,Wie komme ich zum Bahnhof?
+Wann?,¿Cuándo?,preguntas,Wann beginnt das Konzert?
+Wie lange?,¿Cuánto tiempo?,preguntas,Wie lange dauert das?
+Wie viel?,¿Cuánto? (cantidad),preguntas,Wie viel kostet das?
+Wie viel Uhr?,¿Qué hora es?,preguntas,Wie viel Uhr ist es?
+
+Was ist das?,¿Qué es eso?,preguntas,Was ist das?
+Wer ist das?,¿Quién es eso?,preguntas,Wer ist das?
+Warum?,¿Por qué?,preguntas,Warum ist das so?
+
+// ===== NÚMEROS =====
+Null,Cero,números,Null Fehler.
+Eins,Uno,números,Eins, zwei, drei.
+Zwei,Dos,números,Ich habe zwei Katzen.
+Drei,Tres,números,Drei Leute.
+Vier,Cuatro,números,Vier Jahreszeiten.
+Fünf,Cinco,números,Fünf Sterne.
+Sechs,Seis,números,Sechs Personen.
+Sieben,Siete,números,Sieben Tage.
+Acht,Ocho,números,Acht Stunden.
+Neun,Nueve,números,Neun Leben.
+Zehn,Diez,números,Zehn Zehen.
+
+// ===== TIEMPO =====
+Montag,Lunes,tiempo,Am Montag.
+Dienstag,Martes,tiempo,Dienstag ist mein Geburtstag.
+Mittwoch,Miércoles,tiempo,Mittwoch Abend.
+Donnerstag,Jueves,tiempo,Donnerstag läuft ein Film.
+Freitag,Viernes,tiempo,Freitag ist Glückstag.
+Samstag,Sábado,tiempo,Samstag ist frei.
+Sonntag,Domingo,tiempo,Sonntag in der Kirche.
+
+Januar,Enero,tiempo,Januar ist kalt.
+Februar,Febrero,tiempo,Februar 14 ist Valentinstag.
+März,Marzo,tiempo,Im März ist es wärmer.
+April,Abril,tiempo,April Dusche.
+Mai,Mayo,tiempo,Mai Blumen.
+Juni,Junio,tiempo,Juni ist warm.
+Juli,Julio,tiempo,Juli Urlaub.
+August,Agosto,tiempo,August ist heiß.
+September,Septiembre,tiempo,September Schulanfang.
+Oktober,Octubre,tiempo,Oktober Fest.
+November,Noviembre,tiempo,November grau.
+Dezember,Diciembre,tiempo,Dezember Weihnachten.
+
+Heute,Hoy,tiempo,Heute ist Montag.
+Morgen,Mañana,tiempo,Morgen ist Dienstag.
+Gestern,Ayer,tiempo,Gestern war schön.
+Morgens,Por la mañana,tiempo,Morgens ist es kalt.
+Nachmittags,Por la tarde,tiempo,Nachmittags gehe ich arbeiten.
+Abends,Por la noche,tiempo,Abends schaue ich Fernsehen.
+Nachts,De noche,tiempo,Nachts schlafe ich.
+
+// ===== LUGARES COMUNES =====
+Die Wohnung,El apartamento,lugares,Ich wohne in der Wohnung.
+Das Haus,La casa,lugares,Das Haus ist groß.
+Der Bahnhof,La estación de tren,lugares,Der Bahnhof ist nah.
+Die Bushaltestelle,La parada de autobús,lugares,Die Bushaltestelle ist hier.
+Die Straße,La calle,lugares,Die Straße ist breit.
+Der Platz,La plaza,lugares,Der Platz ist leer.
+Das Café,La cafetería,lugares,Das Café ist gemütlich.
+Das Restaurant,El restaurante,lugares,Das Restaurant ist teuer.
+Der Supermarkt,El supermercado,lugares,Der Supermarkt ist nah.
+Die Apotheke,La farmacia,lugares,Die Apotheke ist oben.
+Der Arzt,El médico,lugares,Der Arzt wartet.
+Das Krankenhaus,El hospital,lugares,Das Krankenhaus ist weit.
+Die Schule,La escuela,lugares,Die Schule ist alt.
+Die Universität,La universidad,lugares,Die Universität ist groß.
+Die Kirche,La iglesia,lugares,Die Kirche ist schön.
+Die Moschee,La mezquita,lugares,Die Moschee ist neu.
+Die Bibliothek,La biblioteca,lugares,Die Bibliothek hat viele Bücher.
+Das Kino,El cine,lugares,Das Kino ist leer.
+Das Theater,El teatro,lugares,Das Theater ist prachtvoll.
+
+// ===== TRÁMITES Y DOCUMENTOS =====
+Der Pass,El pasaporte,trámites,Mein Pass ist fertig.
+Der Ausweis,La cédula/ID,trámites,Der Ausweis ist gültig.
+Das Visum,La visa,trámites,Ich brauche ein Visum.
+Die Anmeldung,El registro,trámites,Die Anmeldung dauert lange.
+Die Abmeldung,El desregistro,trámites,Die Abmeldung muss erfolgen.
+Das Formular,El formulario,trámites,Das Formular ist kompliziert.
+Die Unterschrift,La firma,trámites,Die Unterschrift ist erforderlich.
+Der Stempel,El sello,trámites,Der Stempel ist wichtig.
+
+// ===== ACCIONES COMUNES =====
+Gehen,Ir,verbos,Ich gehe zur Bushaltestelle.
+Kommen,Venir / Llegar,verbos,Kommst du heute?
+Bleiben,Quedarse,verbos,Ich bleibe hier.
+Sehen,Ver,verbos,Ich sehe einen Film.
+Hören,Oír / Escuchar,verbos,Ich höre Musik.
+Essen,Comer,verbos,Ich esse Brot.
+Trinken,Beber,verbos,Ich trinke Wasser.
+Schlafen,Dormir,verbos,Ich schlafe gut.
+Arbeiten,Trabajar,verbos,Ich arbeite heute.
+Spielen,Jugar / Tocar,verbos,Ich spiele Fußball.
+Lernen,Aprender,verbos,Ich lerne Deutsch.
+Lesen,Leer,verbos,Ich lese ein Buch.
+Schreiben,Escribir,verbos,Ich schreibe ein Brief.
+Sprechen,Hablar,verbos,Ich spreche Deutsch.
+Fahren,Conducir / Viajar,verbos,Ich fahre mit dem Bus.
+Fliegen,Volar,verbos,Das Flugzeug fliegt.
+
+// ===== SENTIMIENTOS Y ADJETIVOS =====
+Glücklich,Feliz,adjetivos,Ich bin glücklich.
+Traurig,Triste,adjetivos,Sie ist traurig.
+Froh,Contento,adjetivos,Ich bin froh.
+Zufrieden,Satisfecho,adjetivos,Ich bin zufrieden.
+Müde,Cansado,adjetivos,Ich bin müde.
+Wach,Despierto,adjetivos,Ich bin noch wach.
+Schläfrig,Somnoliento,adjetivos,Ich bin schläfrig.
+
+Schön,Bonito / Hermoso,adjetivos,Das ist schön!
+Hässlich,Feo,adjetivos,Das ist hässlich.
+Groß,Grande,adjetivos,Der Tisch ist groß.
+Klein,Pequeño,adjetivos,Der Stuhl ist klein.
+Lang,Largo,adjetivos,Das Haar ist lang.
+Kurz,Corto,adjetivos,Das Haar ist kurz.
+Alt,Viejo,adjetivos,Das Auto ist alt.
+Neu,Nuevo,adjetivos,Das Auto ist neu.
+Schnell,Rápido,adjetivos,Der Zug ist schnell.
+Langsam,Lento,adjetivos,Das Schnecke ist langsam.
+Warm,Caliente / Tibio,adjetivos,Das Wasser ist warm.
+Kalt,Frío,adjetivos,Das Wasser ist kalt.
+Heiß,Muy caliente,adjetivos,Der Kaffee ist heiß.
+
+// ===== COMIDA =====
+Das Brot,El pan,comida,Ich esse Brot.
+Der Käse,El queso,comida,Der Käse ist lecker.
+Die Milch,La leche,comida,Ich trinke Milch.
+Das Fleisch,La carne,comida,Das Fleisch ist rot.
+Der Fisch,El pescado,comida,Der Fisch ist frisch.
+Das Gemüse,La verdura,comida,Das Gemüse ist grün.
+Das Obst,La fruta,comida,Das Obst ist süß.
+Der Apfel,La manzana,comida,Der Apfel ist rot.
+Die Banane,El plátano,comida,Die Banane ist gelb.
+Das Ei,El huevo,comida,Das Ei ist braun.
+Der Kaffee,El café,comida,Ich trinke Kaffee.
+Der Tee,El té,comida,Der Tee ist heiß.
+Das Wasser,El agua,comida,Ein Glas Wasser, bitte.
+Der Wein,El vino,comida,Der Wein ist rot.
+Das Bier,La cerveza,comida,Das Bier ist kühl.
+
+---
+
+**Instrucciones de uso:**
+
+1. **Opción 1: Herramienta Web**
+   - Abre `/wid-game/public/diccionario-gestor.html`
+   - Copia y pega estas líneas en el área "Importar CSV"
+   - Haz click en "Importar desde CSV"
+
+2. **Opción 2: Consola del Navegador**
+   ```javascript
+   import { DictionaryHelper } from './src/services/DictionaryHelper.js';
+   await DictionaryHelper.loadStarterWords();
+   ```
+
+3. **Opción 3: Manualmente**
+   - Abre el diccionario en el juego (Tecla D)
+   - Agrega palabras una por una usando el formulario
+
+¡Disfruta aprendiendo! 🎓📚

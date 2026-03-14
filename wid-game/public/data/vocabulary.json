@@ -1,0 +1,7 @@
+{
+    "meta": {
+        "description": "Lista de vocabulario del jugador. Añade palabras aquí y todos los mini-juegos las usarán automáticamente.",
+        "targetLanguage": "German"
+    },
+    "words": []
+}

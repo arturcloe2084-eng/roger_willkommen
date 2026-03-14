@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 Gestor del Diccionario - Willkommen in Deutschland</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'VT323', monospace;
+            background: #0a0a1a;
+            color: #cccccc;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #00ff41;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff41;
+        }
+        h2 {
+            color: #00ccff;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .section {
+            background: #111111;
+            border: 2px solid #333333;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 3px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            color: #888888;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a3a;
+            border: 1px solid #444444;
+            color: #cccccc;
+            font-family: 'VT323', monospace;
+            border-radius: 2px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #00ccff;
+            box-shadow: 0 0 5px #00ccff;
+        }
+        button {
+            background: #002200;
+            border: 2px solid #00ff41;
+            color: #00ff41;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+            border-radius: 2px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #003300;
+            box-shadow: 0 0 10px #00ff41;
+        }
+        button.secondary {
+            background: #1a3a3a;
+            border-color: #00ccff;
+            color: #00ccff;
+        }
+        button.secondary:hover {
+            background: #1a4a4a;
+            box-shadow: 0 0 10px #00ccff;
+        }
+        button.danger {
+            background: #3a1a1a;
+            border-color: #ff6666;
+            color: #ff6666;
+        }
+        button.danger:hover {
+            background: #4a2a2a;
+            box-shadow: 0 0 10px #ff6666;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stats {
+            background: #1a3a1a;
+            border-left: 3px solid #00ff41;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 5px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            color: #ffcc00;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .stat-label {
+            color: #888888;
+            font-size: 11px;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 2px;
+            border-left: 3px solid;
+        }
+        .message.success {
+            background: #1a3a1a;
+            border-color: #00ff41;
+            color: #00ff41;
+        }
+        .message.error {
+            background: #3a1a1a;
+            border-color: #ff6666;
+            color: #ff6666;
+        }
+        .message.info {
+            background: #1a3a3a;
+            border-color: #00ccff;
+            color: #00ccff;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+        th {
+            background: #1a3a1a;
+            color: #00ff41;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #333333;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #222222;
+        }
+        tr:hover {
+            background: #1a1a3a;
+        }
+        .footer {
+            text-align: center;
+            color: #666666;
+            font-size: 11px;
+            margin-top: 30px;
+        }
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .hidden {
+            display: none;
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 GESTOR DEL DICCIONARIO</h1>
+        <p style="color: #888888; margin-bottom: 20px;">Administra el diccionario persistente de "Willkommen in Deutschland"</p>
+
+        <!-- Mensajes -->
+        <div id="messageContainer"></div>
+
+        <!-- Estadísticas -->
+        <div class="section">
+            <h2>📊 Estadísticas</h2>
+            <div id="stats" class="stats">
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalWords">0</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="customWords">0</div>
+                        <div class="stat-label">Personalizadas</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="categories">0</div>
+                        <div class="stat-label">Categorías</div>
+                    </div>
+                </div>
+            </div>
+            <button class="secondary" onclick="refreshStats()">Actualizar</button>
+        </div>
+
+        <!-- Agregar palabra individual -->
+        <div class="section">
+            <h2>➕ Agregar Palabra</h2>
+            <div class="input-row">
+                <input type="text" id="word" placeholder="Palabra (alemán)" />
+                <input type="text" id="translation" placeholder="Traducción" />
+                <input type="text" id="category" placeholder="Categoría" />
+                <input type="text" id="example" placeholder="Ejemplo (opcional)" />
+            </div>
+            <button onclick="addSingleWord()" style="margin-top: 10px;">Agregar Palabra</button>
+        </div>
+
+        <!-- Importar desde CSV -->
+        <div class="section">
+            <h2>📥 Importar CSV</h2>
+            <label>Formato: palabra,traducción,categoría,ejemplo (una por línea)</label>
+            <textarea id="csvInput" placeholder="Hallo,Hola,saludo,Hallo, ich bin neu.
+Danke,Gracias,cortesía,Danke schön!
+Wasser,Agua,sustantivos,Ein Glas Wasser, bitte."></textarea>
+            <button onclick="importFromCSV()">Importar desde CSV</button>
+        </div>
+
+        <!-- Cargar palabras de inicio -->
+        <div class="section">
+            <h2>🚀 Palabras de Inicio</h2>
+            <p style="color: #888888; font-size: 12px; margin-bottom: 10px;">Carga 10 palabras comunes para empezar (solo si no existen)</p>
+            <button class="secondary" onclick="loadStarterWords()">Cargar Palabras de Inicio</button>
+        </div>
+
+        <!-- Ver diccionario -->
+        <div class="section">
+            <h2>📚 Ver Diccionario</h2>
+            <div class="button-group">
+                <button class="secondary" onclick="showAllWords()">Todas las palabras</button>
+                <button class="secondary" onclick="showCustomWords()">Solo personalizadas</button>
+            </div>
+            <div id="wordsContainer" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Exportar -->
+        <div class="section">
+            <h2>📤 Exportar</h2>
+            <div class="button-group">
+                <button class="secondary" onclick="exportAllJSON()">Descargar Completo (JSON)</button>
+                <button class="secondary" onclick="exportCustomJSON()">Descargar Personalizadas (JSON)</button>
+                <button class="secondary" onclick="exportAsCSV()">Descargar como CSV</button>
+            </div>
+        </div>
+
+        <!-- Administración -->
+        <div class="section">
+            <h2>⚙️ Administración</h2>
+            <p style="color: #888888; font-size: 12px; margin-bottom: 10px;">Operaciones peligrosas - ¡usa con cuidado!</p>
+            <div class="button-group">
+                <button class="danger" onclick="clearAllCustom()">🗑️ Eliminar Personalizadas</button>
+                <button class="danger" onclick="clearAllWords()">🗑️ Eliminar TODO (base + custom)</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Diccionario Persistente v1.0 | Storage: localStorage</p>
+            <p>Los datos se guardan automáticamente en el navegador</p>
+        </div>
+    </div>
+
+    <script>
+        // Simular carga del diccionario (en el juego real usa DictionaryManager)
+        const dict = {
+            getAll: () => JSON.parse(localStorage.getItem('allWords') || '[]'),
+            getCustom: () => JSON.parse(localStorage.getItem('customDictionaryWords') || '[]'),
+            addWord: (word, translation, category, example) => {
+                const custom = JSON.parse(localStorage.getItem('customDictionaryWords') || '[]');
+                const all = dict.getAll();
+                
+                if (all.find(w => w.word.toLowerCase() === word.toLowerCase())) {
+                    return false;
+                }
+                
+                custom.push({ word, translation, category: category || 'general', example: example || '', isCustom: true, addedAt: Date.now() });
+                localStorage.setItem('customDictionaryWords', JSON.stringify(custom));
+                return true;
+            },
+            getCategories: () => {
+                const all = dict.getAll();
+                return [...new Set(all.map(w => w.category))].sort();
+            },
+            count: () => dict.getAll().length,
+            countCustom: () => dict.getCustom().length
+        };
+
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('messageContainer');
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`;
+            msg.textContent = text;
+            container.appendChild(msg);
+            setTimeout(() => msg.remove(), 4000);
+        }
+
+        function refreshStats() {
+            document.getElementById('totalWords').textContent = dict.count();
+            document.getElementById('customWords').textContent = dict.countCustom();
+            document.getElementById('categories').textContent = dict.getCategories().length;
+        }
+
+        function addSingleWord() {
+            const word = document.getElementById('word').value.trim();
+            const translation = document.getElementById('translation').value.trim();
+            const category = document.getElementById('category').value.trim() || 'general';
+            const example = document.getElementById('example').value.trim();
+
+            if (!word || !translation) {
+                showMessage('⚠️ Completa palabra y traducción', 'error');
+                return;
+            }
+
+            if (dict.addWord(word, translation, category, example)) {
+                showMessage(`✅ Palabra "${word}" agregada`, 'success');
+                document.getElementById('word').value = '';
+                document.getElementById('translation').value = '';
+                document.getElementById('category').value = '';
+                document.getElementById('example').value = '';
+                refreshStats();
+            } else {
+                showMessage(`⚠️ La palabra "${word}" ya existe`, 'error');
+            }
+        }
+
+        function importFromCSV() {
+            const csv = document.getElementById('csvInput').value.trim();
+            if (!csv) {
+                showMessage('⚠️ Pega datos CSV', 'error');
+                return;
+            }
+
+            let added = 0;
+            csv.split('\n').forEach(line => {
+                if (!line) return;
+                const [word, translation, category, example] = line.split(',').map(s => s.trim());
+                if (word && translation && dict.addWord(word, translation, category || 'general', example || '')) {
+                    added++;
+                }
+            });
+
+            showMessage(`✅ Importadas ${added} palabras`, 'success');
+            refreshStats();
+        }
+
+        function loadStarterWords() {
+            const starterWords = [
+                { word: 'Guten Morgen', translation: 'Buenos días', category: 'saludo', example: 'Guten Morgen, Herr Schmidt!' },
+                { word: 'Guten Abend', translation: 'Buenas noches', category: 'saludo', example: 'Guten Abend, meine Damen!' },
+                { word: 'Wie geht es dir?', translation: '¿Cómo estás?', category: 'saludo', example: 'Wie geht es dir heute?' },
+                { word: 'Mir geht es gut', translation: 'Me va bien', category: 'saludo', example: 'Mir geht es gut, danke!' },
+                { word: 'Entschuldigung', translation: 'Perdón / Disculpe', category: 'cortesía', example: 'Entschuldigung, wo ist die Bushaltestelle?' },
+                { word: 'Bitte schön', translation: 'De nada / Por supuesto', category: 'cortesía', example: 'Bitte schön, gerne!' },
+                { word: 'Ich verstehe nicht', translation: 'No entiendo', category: 'comunicación', example: 'Entschuldigung, ich verstehe nicht.' },
+                { word: 'Können Sie mir helfen?', translation: '¿Puede ayudarme?', category: 'ayuda', example: 'Können Sie mir helfen, bitte?' },
+                { word: 'Wo ist die Toilette?', translation: '¿Dónde está el baño?', category: 'lugares', example: 'Wo ist die Toilette, bitte?' },
+                { word: 'Ich bin neu hier', translation: 'Soy nuevo aquí', category: 'presentación', example: 'Hallo, ich bin neu hier.' }
+            ];
+
+            let added = 0;
+            starterWords.forEach(word => {
+                if (dict.addWord(word.word, word.translation, word.category, word.example)) {
+                    added++;
+                }
+            });
+
+            showMessage(`✅ Cargadas ${added} palabras de inicio`, 'success');
+            refreshStats();
+        }
+
+        function showAllWords() {
+            const words = dict.getAll();
+            displayWords(words);
+        }
+
+        function showCustomWords() {
+            const words = dict.getCustom();
+            displayWords(words);
+        }
+
+        function displayWords(words) {
+            const container = document.getElementById('wordsContainer');
+            if (words.length === 0) {
+                container.innerHTML = '<p style="color: #888888;">No hay palabras</p>';
+                return;
+            }
+
+            let html = '<table><tr><th>Palabra</th><th>Traducción</th><th>Categoría</th><th>Ejemplo</th><th></th></tr>';
+            words.forEach((w, idx) => {
+                html += `<tr>
+                    <td>${w.word}</td>
+                    <td>${w.translation}</td>
+                    <td>${w.category}</td>
+                    <td>${w.example || '-'}</td>
+                    <td>${w.isCustom ? '⭐' : ''}</td>
+                </tr>`;
+            });
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function exportAllJSON() {
+            const words = dict.getAll();
+            const data = {
+                exportDate: new Date().toISOString(),
+                totalWords: words.length,
+                customWords: dict.countCustom(),
+                words
+            };
+            downloadJSON(data, 'diccionario-completo.json');
+            showMessage('✅ Descargado', 'success');
+        }
+
+        function exportCustomJSON() {
+            const words = dict.getCustom();
+            downloadJSON(words, 'diccionario-personalizado.json');
+            showMessage('✅ Descargado', 'success');
+        }
+
+        function exportAsCSV() {
+            const words = dict.getAll();
+            let csv = 'Palabra,Traducción,Categoría,Ejemplo,Personalizada\n';
+            words.forEach(w => {
+                csv += `"${w.word}","${w.translation}","${w.category}","${w.example || ''}","${w.isCustom ? 'Sí' : 'No'}"\n`;
+            });
+            downloadCSV(csv, 'diccionario.csv');
+            showMessage('✅ Descargado', 'success');
+        }
+
+        function downloadJSON(data, filename) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            downloadFile(blob, filename);
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            downloadFile(blob, filename);
+        }
+
+        function downloadFile(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllCustom() {
+            if (confirm('⚠️ ¿Eliminar todas las palabras personalizadas? (No se puede deshacer)')) {
+                localStorage.removeItem('customDictionaryWords');
+                showMessage('✅ Palabras personalizadas eliminadas', 'success');
+                refreshStats();
+            }
+        }
+
+        function clearAllWords() {
+            if (confirm('⚠️⚠️ ¿ELIMINAR TODO? Esto no se puede deshacer.')) {
+                if (confirm('⚠️⚠️⚠️ CONFIRMAR: ¿Eliminar el diccionario completo?')) {
+                    localStorage.removeItem('customDictionaryWords');
+                    localStorage.removeItem('allWords');
+                    showMessage('✅ Diccionario completo eliminado', 'success');
+                    refreshStats();
+                }
+            }
+        }
+
+        // Cargar estadísticas al abrir
+        refreshStats();
+    </script>
+</body>
+</html>
