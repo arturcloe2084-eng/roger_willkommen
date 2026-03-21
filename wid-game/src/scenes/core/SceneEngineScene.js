@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { SCENE_KEYS } from '../../config/sceneKeys.js';
 import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
+import { interactWithPC } from '../../services/SceneBuilderUI.js';
 
 /**
  * SceneEngine — Motor genérico de escenas.
@@ -137,6 +138,7 @@ export class SceneEngineScene extends Phaser.Scene {
         // ═══ 5. HOTSPOTS ═══
         this.hotspotGraphics = [];
         (this.sceneDef.hotspots || []).forEach((hs) => this.createHotspot(hs));
+        this._setupSceneBuilderShortcut();
 
         // ═══ 6. FADE IN ═══
         this.cameras.main.fadeIn(600, 0, 0, 0);
@@ -157,6 +159,7 @@ export class SceneEngineScene extends Phaser.Scene {
         });
         this.events.on('mini-complete', (payload) => this.handleMiniComplete(payload));
         this.events.on('dialog-closed', (payload) => this.handleDialogClosed(payload));
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this._cleanupSceneBuilderShortcut());
     }
 
     createHotspot(hs) {
@@ -170,7 +173,8 @@ export class SceneEngineScene extends Phaser.Scene {
             dialog: 0x00ccff,
             crossword: 0xffcc00,
             quiz: 0xff8800,
-            radio: 0xbb88ff
+            radio: 0xbb88ff,
+            sceneBuilder: 0x66ff88
         }[hs.type] || 0xffffff;
 
         indicator.lineStyle(1, color, 0.3);
@@ -181,7 +185,8 @@ export class SceneEngineScene extends Phaser.Scene {
             dialog: '💬',
             crossword: '📰',
             quiz: '📝',
-            radio: '🛰'
+            radio: '🛰',
+            sceneBuilder: '💾'
         }[hs.type] || '❓';
 
         const iconText = this.add.text(hs.x, hs.y - hs.height / 2 - 12, icon, {
@@ -240,6 +245,9 @@ export class SceneEngineScene extends Phaser.Scene {
                     break;
                 case 'radio':
                     this.openSignalLocator(hs);
+                    break;
+                case 'sceneBuilder':
+                    this.openSceneBuilder(hs);
                     break;
             }
         });
@@ -302,6 +310,53 @@ export class SceneEngineScene extends Phaser.Scene {
             tolerance: options.tolerance,
             theme: options.theme || this.sceneDef.id
         });
+    }
+
+    openSceneBuilder(hs = {}) {
+        interactWithPC(this, { source: 'pc', label: hs.label || 'Ordenador antiguo' });
+        this.showStoryToast('PC retro activado');
+    }
+
+    _setupSceneBuilderShortcut() {
+        this._cleanupSceneBuilderShortcut();
+
+        this.sceneBuilderHotspot = (this.sceneDef.hotspots || []).find((hs) => hs.type === 'sceneBuilder') || null;
+        if (!this.sceneBuilderHotspot || !this.input?.keyboard) return;
+
+        const { width, height } = this.cameras.main;
+        const hintLabel = this.sceneBuilderHotspot.label || 'Encender el ordenador antiguo';
+        const hintWidth = 292;
+        const hintX = width - 170;
+        const hintY = height - 42;
+
+        this.sceneBuilderHintBg = this.add.rectangle(hintX, hintY, hintWidth, 42, 0x001100, 0.82)
+            .setStrokeStyle(1, 0x66ff88, 0.75)
+            .setDepth(84)
+            .setInteractive({ useHandCursor: true });
+
+        this.sceneBuilderHintText = this.add.text(hintX, hintY, `[ ENTER ] ${hintLabel}`, {
+            fontFamily: 'VT323',
+            fontSize: '18px',
+            fill: '#66ff88'
+        }).setOrigin(0.5).setDepth(85);
+
+        this.sceneBuilderHintBg.on('pointerdown', () => this.openSceneBuilder(this.sceneBuilderHotspot));
+
+        this._sceneBuilderEnterHandler = () => this.openSceneBuilder(this.sceneBuilderHotspot);
+        this.input.keyboard.on('keydown-ENTER', this._sceneBuilderEnterHandler);
+    }
+
+    _cleanupSceneBuilderShortcut() {
+        if (this._sceneBuilderEnterHandler && this.input?.keyboard) {
+            this.input.keyboard.off('keydown-ENTER', this._sceneBuilderEnterHandler);
+            this._sceneBuilderEnterHandler = null;
+        }
+
+        this.sceneBuilderHintBg?.destroy();
+        this.sceneBuilderHintBg = null;
+        this.sceneBuilderHintText?.destroy();
+        this.sceneBuilderHintText = null;
+        this.sceneBuilderHotspot = null;
     }
 
     registerHotspotStory(hs) {

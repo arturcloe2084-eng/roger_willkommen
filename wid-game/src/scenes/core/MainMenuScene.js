@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENE_KEYS } from '../../config/sceneKeys.js';
 import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 import { i18n, LANGUAGES } from '../../services/i18n.js';
+import { interactWithPC } from '../../services/SceneBuilderUI.js';
 
 /**
  * MainMenuScene — Menú principal redesñado con:
@@ -81,8 +82,8 @@ export class MainMenuScene extends Phaser.Scene {
         // ═══════════════════════════════════════════════════
         //  BOTONES — Layout centrado elegante
         // ═══════════════════════════════════════════════════
-        const btnCenterY = 255;
-        const btnSpacing = 75;
+        const btnCenterY = 265;
+        const btnSpacing = 58;
 
         // ── Botón EMPEZAR ──
         this._createMenuButton(
@@ -106,9 +107,20 @@ export class MainMenuScene extends Phaser.Scene {
             () => this._openDictionary()
         );
 
-        // ── Botón CONFIGURACIÓN ──
+        // ── Botón SCENE BUILDER ──
         this._createMenuButton(
             width / 2, btnCenterY + btnSpacing,
+            `[ B ] ${i18n.t('menu_scene_builder')}`, 'scene-builder',
+            {
+                w: 320, h: 34, bgColor: 0x111300, borderColor: 0xffcc00, textColor: '#ffcc00',
+                fontSize: '14px', fontFamily: 'VT323'
+            },
+            () => this._openSceneBuilder()
+        );
+
+        // ── Botón CONFIGURACIÓN ──
+        this._createMenuButton(
+            width / 2, btnCenterY + (btnSpacing * 2),
             i18n.t('menu_settings'), 'settings',
             {
                 w: 250, h: 32, bgColor: 0x1a1a2a, borderColor: 0x8888cc, textColor: '#9999cc',
@@ -118,7 +130,7 @@ export class MainMenuScene extends Phaser.Scene {
         );
 
         // ═══ Indicador de idioma activo ═══
-        const langIndicatorY = btnCenterY + btnSpacing + 58;
+        const langIndicatorY = btnCenterY + (btnSpacing * 2) + 50;
         const langInfo = i18n.getLangInfo(i18n.gameLang);
 
         this.add.text(width / 2, langIndicatorY, `🎯 ${langInfo.flag} ${langInfo.nativeName}`, {
@@ -147,6 +159,7 @@ export class MainMenuScene extends Phaser.Scene {
         this.input.keyboard.on('keydown-SPACE', () => this._startGame());
         this.input.keyboard.on('keydown-ENTER', () => this._startGame());
         this.input.keyboard.on('keydown-D', () => this._openDictionary());
+        this.input.keyboard.on('keydown-B', () => this._openSceneBuilder());
         this.input.keyboard.on('keydown-S', () => this._openSettings());
 
         // ═══ TRANSICIÓN ENTRADA ═══
@@ -226,6 +239,11 @@ export class MainMenuScene extends Phaser.Scene {
             this.scene.sleep(SCENE_KEYS.MAIN_MENU);
             this.scene.run(SCENE_KEYS.DICTIONARY, { returnScene: SCENE_KEYS.MAIN_MENU });
         });
+    }
+
+    _openSceneBuilder() {
+        if (this._settingsOverlay) return;
+        interactWithPC(this, { source: 'menu' });
     }
 
     /* ── Settings overlay (HTML) ───────────────────────── */

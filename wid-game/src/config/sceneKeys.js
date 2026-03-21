@@ -8,6 +8,7 @@ export const SCENE_KEYS = Object.freeze({
     CROSSWORD: 'CrosswordScene',
     QUIZ: 'QuizScene',
     SIGNAL_LOCATOR: 'SignalLocatorScene',
+    ROGER_EXAMPLE: 'RogerExampleScene',
     GAME_HUD: 'GameHudScene',
     DICTIONARY: 'DictionaryScene',
 });

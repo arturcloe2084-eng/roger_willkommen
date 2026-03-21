@@ -2,12 +2,14 @@ import Phaser from 'phaser';
 import { SCENE_KEYS } from '../../config/sceneKeys.js';
 import { askNpcDialogue } from '../../services/ai/NpcDialogueService.js';
 import { voiceService } from '../../services/audio/VoiceService.js';
+import { narratorService } from '../../services/NarratorService.js';
 import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 import { i18n } from '../../services/i18n.js';
 
 /**
  * DialogScene — Diálogo con NPC vía IA (Gemini).
  * Ahora funciona con cualquier NPC definido en scenes.json.
+ * Incluye: narración, subtítulos, interacción mejorada, opciones de diálogo
  * Solo necesita: npcName, displayName, personality, returnScene
  */
 export class DialogScene extends Phaser.Scene {
@@ -27,37 +29,53 @@ export class DialogScene extends Phaser.Scene {
         // Overlay oscuro
         this.add.rectangle(0, 0, width, height, 0x000000, 0.7).setOrigin(0);
 
-        // Caja de diálogo
-        const dialogBox = this.add.rectangle(width / 2, height / 2, 700, 450, 0x0a0a2a, 0.95);
+        // ═══ PERSONAJE VISUAL (representación simple) ═══
+        this.createCharacterVisual(width, height);
+
+        // Caja de diálogo principal
+        const dialogBox = this.add.rectangle(width / 2, height / 2 - 30, 700, 350, 0x0a0a2a, 0.95);
         dialogBox.setStrokeStyle(4, 0x00ff41);
 
-        this.titleText = this.add.text(width / 2, height / 2 - 190, `💬 ${this.npcData.displayName}`, {
+        this.titleText = this.add.text(width / 2, height / 2 - 180, `💬 ${this.npcData.displayName}`, {
             fontFamily: '"Press Start 2P"',
             fontSize: '10px',
             fill: '#00ff41',
             wordWrap: { width: 640 }
         }).setOrigin(0.5);
 
-        this.historyText = this.add.text(width / 2 - 320, height / 2 - 140, i18n.t('dialog_connecting'), {
+        this.historyText = this.add.text(width / 2 - 320, height / 2 - 130, i18n.t('dialog_connecting'), {
             fontFamily: 'VT323',
             fontSize: '24px',
             fill: '#ffffff',
             wordWrap: { width: 640 }
         });
 
-        this.historyTextT1 = this.add.text(width / 2 - 320, height / 2 - 100, '', {
+        this.historyTextT1 = this.add.text(width / 2 - 320, height / 2 - 90, '', {
             fontFamily: 'VT323',
             fontSize: '16px',
             fill: '#aaaaaa',
             wordWrap: { width: 620 }
         });
 
-        this.historyTextT2 = this.add.text(width / 2 - 320, height / 2 - 80, '', {
+        this.historyTextT2 = this.add.text(width / 2 - 320, height / 2 - 70, '', {
             fontFamily: 'VT323',
             fontSize: '12px',
             fill: '#888888',
             wordWrap: { width: 620 }
         });
+
+        // ═══ CAJA DE SUBTÍTULOS EN TIEMPO REAL ═══
+        this.subtitleBox = this.add.rectangle(width / 2, height - 80, width - 40, 60, 0x0a0a2a, 0.9);
+        this.subtitleBox.setStrokeStyle(2, 0x00ffff);
+        this.subtitleBox.setAlpha(0);
+
+        this.subtitleText = this.add.text(width / 2, height - 80, '', {
+            fontFamily: 'VT323',
+            fontSize: '14px',
+            fill: '#00ffff',
+            wordWrap: { width: width - 80 },
+            align: 'center'
+        }).setOrigin(0.5).setAlpha(0);
 
         // Input del usuario
         this.inputText = this.add.text(width / 2 - 320, height / 2 + 80, `> ${i18n.t('dialog_input_hint')}`, {
@@ -79,7 +97,7 @@ export class DialogScene extends Phaser.Scene {
         this.micButton.on('pointerout', () => micBg.setFillStyle(0x00ff41, 0.2));
 
         // --- Nivel del jugador visible ---
-        this.add.text(width / 2 + 280, height / 2 - 190, `LVL ${playerProgressStore.level}`, {
+        this.add.text(width / 2 + 280, height / 2 - 180, `LVL ${playerProgressStore.level}`, {
             fontFamily: '"Press Start 2P"',
             fontSize: '8px',
             fill: '#888888'
@@ -113,8 +131,32 @@ export class DialogScene extends Phaser.Scene {
             this.inputText.setText(`> ${this.userInput}_`);
         });
 
-        this.updateHistory(`${this.npcData.displayName}: "Hello!"`); // Greeting will be updated via response soon
+        this.updateHistory(`${this.npcData.displayName}: "Hello!"`);
         voiceService.speak("Hello");
+    }
+
+    /**
+     * Crea una representación visual simple del personaje
+     */
+    createCharacterVisual(width, height) {
+        const charX = 150;
+        const charY = height / 2 - 50;
+
+        // Cabeza simple
+        this.add.circle(charX, charY - 30, 25, 0x88ccff, 0.7)
+            .setStrokeStyle(2, 0x00ff41);
+
+        // Cuerpo simple
+        this.add.rectangle(charX, charY + 20, 40, 50, 0x00aa88, 0.6)
+            .setStrokeStyle(2, 0x00ff41);
+
+        // Nombre del personaje
+        this.add.text(charX, charY + 70, this.npcData.displayName, {
+            fontFamily: 'VT323',
+            fontSize: '12px',
+            fill: '#00ffff',
+            align: 'center'
+        }).setOrigin(0.5);
     }
 
     startVoiceInput() {
@@ -177,10 +219,45 @@ export class DialogScene extends Phaser.Scene {
             this.game.events.emit('update-hud');
         }
 
-        // Leer respuesta en voz alta
+        // ═══ REPRODUCIR NARRACIÓN CON SUBTÍTULOS ═══
+        const narration = {
+            text: response.npc_dialogue,
+            duration: 3000,
+            translations: {
+                es: response.npc_dialogue_t1 || response.feedback_es,
+                en: response.npc_dialogue_t2 || 'NPC response'
+            }
+        };
+
+        // Mostrar subtítulos en tiempo real
+        this.tweens.add({
+            targets: this.subtitleBox,
+            alpha: 0.9,
+            duration: 200
+        });
+
+        narratorService.narrateInGerman(narration, (subtitle, lang) => {
+            this.subtitleText.setText(subtitle);
+            const colors = { de: '#ffffff', es: '#ffcc00', en: '#00ffff' };
+            this.subtitleText.setFill(colors[lang] || '#ffffff');
+            this.tweens.add({
+                targets: this.subtitleText,
+                alpha: 1,
+                duration: 100
+            });
+        }, () => {
+            // Cuando termina la narración, ocultar subtítulos
+            this.tweens.add({
+                targets: [this.subtitleBox, this.subtitleText],
+                alpha: 0,
+                duration: 300,
+                delay: 500
+            });
+        });
+
+        // Leer respuesta en voz alta también
         voiceService.speak(response.npc_dialogue);
 
-        // Mostrar respuesta
         // Mostrar respuesta con traducciones
         const fullText = `${this.npcData.displayName}: "${response.npc_dialogue}"`;
         const t1 = response.npc_dialogue_t1 || '';
@@ -189,7 +266,7 @@ export class DialogScene extends Phaser.Scene {
         this.updateHistory(fullText, t1, t2);
         this.inputText.setText('> _');
 
-        // Mostrar evaluación y feedback en la parte inferior si es relevante
+        // Mostrar evaluación y feedback
         if (this._feedbackText) this._feedbackText.destroy();
         const { width, height } = this.cameras.main;
         this._feedbackText = this.add.text(width / 2 - 320, height / 2 + 30,

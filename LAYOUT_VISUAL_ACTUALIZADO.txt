@@ -1,0 +1,130 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                 BARRA RETRO ESTILO YOUTUBE - ESCENA DE JUEGO                   ║
+║                                                                                 ║
+║     Controles retro debajo de la imagen con estilo verde terminal             ║
+║     (Funcionalidad de botones se implementará cuando haya videos)              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│  SCENEBUILDER.EXE - Booting...                                        [ESC]    │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│  1. EJEMPLO DE ROGER    2. CREAR ESCENA                                        │
+│  Aprende con la...      Escribe tu guion...                                    │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                                                                                ║
+║    ┌──────────────────────────────────────────────────────────────────┐       ║
+║    │ [FOTO DE BURGERAMT - Entrada del edificio con caos]             │       ║
+║    │ JUEGO / APRENDER ALEMAN EN CONTEXTO                    Escena 1 │       ║
+║    │                                                                 │       ║
+║    │ ┌────────────────────────────────────────────────────────────┐  │       ║
+║    │ │▶│━━━━●━━━━━━━━━━━━0:00/5:30│🔊│⚙│▢│⛶│                    │  │       ║
+║    │ └────────────────────────────────────────────────────────────┘  │       ║
+║    │  (BARRA DE CONTROLES RETRO VERDE)                              │       ║
+║    │                                                                 │       ║
+║    └──────────────────────────────────────────────────────────────────┘       ║
+║                                                                                ║
+║    Roger llega al Burgeramt / Narrador                                        ║
+║    ┌────────────────────────────────────────────────────────────────┐        ║
+║    │   [ Reiniciar ]                                                │        ║
+║    └────────────────────────────────────────────────────────────────┘        ║
+║                                                                                ║
+║    La Entrada del Burgeramt                                                   ║
+║                                                                                ║
+║    Willkommen im Spiel der Integration...                                      ║
+║    (Texto en alemán con subtítulos)                                            ║
+║                                                                                ║
+║    Bienvenido al Juego de la Integración...                                    ║
+║    (Traducción en español)                                                     ║
+║                                                                                ║
+║    [Willkommen] [Integration] [Spiel]                                         ║
+║                                                                                ║
+║    APRENDIZAJE:                                                                ║
+║    Roger entra al Burgeramt y el caos lo envuelve inmediatamente...           ║
+║                                                                                ║
+║    [ Anterior ] [ Siguiente ]                                                  ║
+║                                                                                ║
+║    [ Ver blueprint ]  [ Crear mi propia escena ]                              ║
+║                                                                                ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+═════════════════════════════════════════════════════════════════════════════════
+
+🎬 CONTROLES RETRO YOUTUBE:
+
+┌─ BOTÓN PLAY ─────────────────────────────────────────────────────────────────┐
+│ ▶  → Lanza la escena interactiva RogerExampleScene con narrador y karaoke    │
+│    (El primer botón ejecuta la escena)                                        │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ BARRA DE PROGRESO ──────────────────────────────────────────────────────────┐
+│ ━━━━●━━━━━━━━  → Simula progreso (placeholder para videos futuros)           │
+│ Muestra 25% de progreso visual                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ TIEMPO ─────────────────────────────────────────────────────────────────────┐
+│ 0:00 / 5:30  → Tiempo actual / Duración total (placeholder para videos)      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ BOTONES FUNCIONALES ────────────────────────────────────────────────────────┐
+│ 🔊  → Volumen (placeholder)                                                 │
+│ ⚙   → Configuración (placeholder)                                           │
+│ ▢   → Modo cine (placeholder)                                               │
+│ ⛶   → Pantalla completa (placeholder)                                       │
+│                                                                              │
+│ Nota: Los botones tienen estilos pero sus funciones se implementarán        │
+│       cuando los videos estén disponibles                                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+🎨 ESTILOS RETRO:
+
+Barra de controles:
+  • Color de fondo: Negro gradiente (#1a1a1a → #0a0a0a)
+  • Borde superior: Verde brillante (#00ff00)
+  • Altura: 56px
+  • Fuente: VT323 (monospace terminal)
+
+Botones:
+  • Fondo: Negro gradiente
+  • Borde: Verde (#00ff00) con efecto 3D
+  • Color: Verde brillante
+  • Tamaño: 40x36px
+  • Estados: Normal, Hover (más brillante), Active (presionado)
+  • Efecto 3D: Bordes biselados con sombras internas
+
+Barra de progreso:
+  • Fondo: Negro
+  • Progreso: Verde gradiente (#00ff00 → #00cc00)
+  • Borde: Verde con efecto 3D
+  • Sombra: Glow verde suave
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✨ CARACTERÍSTICAS:
+
+✅ Ubicación: Overlay en la parte inferior de la imagen
+✅ Diseño: Coherente con estilo retro del juego
+✅ Colores: Verde terminal clásico en fondo negro
+✅ Fuente: VT323 monospace (auténtica retro)
+✅ Efectos: Botones con efecto 3D, sombras internas
+✅ Responsivo: Se ajusta al ancho del contenedor
+✅ Solo en EJEMPLO DE ROGER: No aparece en otras categorías
+✅ Preparado para videos: Estructura lista para integrar videos futuros
+
+═════════════════════════════════════════════════════════════════════════════════
+
+🚀 PRÓXIMA FASE:
+
+Cuando haya videos reales disponibles:
+1. Reemplazar imagen estática por <video> tag
+2. Conectar botones play/pause con video playback
+3. Implementar volumen real
+4. Actualizar timeline con progreso real
+5. Pantalla completa funcional
+
+═════════════════════════════════════════════════════════════════════════════════

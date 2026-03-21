@@ -98,6 +98,19 @@
                     "label": "Manual del inquilino"
                 },
                 {
+                    "id": "pc_recuperado",
+                    "x": 585,
+                    "y": 378,
+                    "width": 180,
+                    "height": 110,
+                    "type": "sceneBuilder",
+                    "label": "Encender el ordenador antiguo",
+                    "story": {
+                        "journal": "El ordenador rescatado del Burgeramt se enciende como si te estuviera esperando.",
+                        "flag": "apartamento:pc_recuperado"
+                    }
+                },
+                {
                     "id": "radio_portatil",
                     "x": 620,
                     "y": 205,
@@ -548,6 +561,84 @@
                     }
                 }
             ]
+        },
+        "roger_example": {
+            "id": "roger_example",
+            "name": "📖 ROGER EXAMPLE SCENE",
+            "chapter": "Tutorial Interactivo — Aprende creando",
+            "objective": "Experimenta una escena completa con narración, diálogos y karaoke. Este es el template que usarás para crear tus propias escenas.",
+            "background": "assets/scene-roger-example.png",
+            "ambientText": "Una escena de ejemplo dinámica. Observa cómo el narrador en alemán cuenta la historia, cómo el protagonista interactúa, y cómo tú puedes practicar hablando como si fuera karaoke.",
+            "isRogerExample": true,
+            "sceneType": "narrative_interactive",
+            "narrationLanguage": "de",
+            "hotspots": [
+                {
+                    "id": "roger_main_flow",
+                    "x": 200,
+                    "y": 200,
+                    "width": 600,
+                    "height": 400,
+                    "type": "roger_scene",
+                    "label": "Experience the Scene",
+                    "story": {
+                        "journal": "Asistes a una escena narrativa completa con narrador en alemán, diálogos con personajes y modo karaoke para practicar.",
+                        "flag": "roger:example_viewed"
+                    }
+                }
+            ],
+            "metadata": {
+                "description": "Esta escena sirve como ejemplo de cómo crear escenas con LLM",
+                "template": "true",
+                "acts": [
+                    {
+                        "number": 1,
+                        "title": "Introducción Narrativa",
+                        "duration": 8000,
+                        "type": "narration",
+                        "content": "Willkommen in Berlin. Der Protagonist steht vor der Wohnung. Es ist kalt und regnet."
+                    },
+                    {
+                        "number": 2,
+                        "title": "Karaoke del Protagonista",
+                        "duration": 5000,
+                        "type": "karaoke",
+                        "character": "Roger",
+                        "line": "Es tut mir leid, können Sie mir helfen?"
+                    },
+                    {
+                        "number": 3,
+                        "title": "Diálogo con NPC",
+                        "duration": 6000,
+                        "type": "dialogue",
+                        "npc": {
+                            "name": "Hans_Doorman",
+                            "displayName": "Hans (Portero)",
+                            "personality": "Du bist ein Portier eines Berliner Wohnhauses. Du sprichst Deutsch A1-A2. Du bist hilfsbereit aber auch etwas mürrisch."
+                        },
+                        "dialogueOptions": [
+                            "Ich habe die Wohnung verloren...",
+                            "Können Sie mir die Adresse geben?",
+                            "Danke für Ihre Hilfe"
+                        ]
+                    },
+                    {
+                        "number": 4,
+                        "title": "Karaoke Final",
+                        "duration": 5000,
+                        "type": "karaoke",
+                        "character": "Roger",
+                        "line": "Danke schön für Ihre Hilfe!"
+                    },
+                    {
+                        "number": 5,
+                        "title": "Conclusión",
+                        "duration": 3000,
+                        "type": "narration",
+                        "content": "Die Wohnung ist gefunden. Ein Kapitel endet, die nächste Herausforderung wartet."
+                    }
+                ]
+            }
         }
     }
 }

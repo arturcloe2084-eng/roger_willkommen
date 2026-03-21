@@ -8,6 +8,7 @@ import { DialogScene } from '../scenes/features/DialogScene.js';
 import { CrosswordScene } from '../scenes/features/CrosswordScene.js';
 import { QuizScene } from '../scenes/features/QuizScene.js';
 import { SignalLocatorScene } from '../scenes/features/SignalLocatorScene.js';
+import { RogerExampleScene } from '../scenes/features/RogerExampleScene.js';
 
 export function createGameConfig() {
     return {
@@ -30,6 +31,7 @@ export function createGameConfig() {
             CrosswordScene,
             QuizScene,
             SignalLocatorScene,
+            RogerExampleScene,
             GameHudScene,
         ],
     };
