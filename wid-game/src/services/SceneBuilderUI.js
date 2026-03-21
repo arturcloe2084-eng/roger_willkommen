@@ -1,6 +1,7 @@
 import { DictionaryManager } from './DictionaryManager.js';
 import { playerProgressStore } from './player/PlayerProgressStore.js';
 import { SCENE_KEYS } from '../config/sceneKeys.js';
+import { narratorService } from './NarratorService.js';
 
 const STORAGE_KEY = 'rw_scene_builder_last_scene';
 const CUSTOM_SCENES_KEY = 'rw_scene_builder_custom_scenes';
@@ -648,16 +649,27 @@ export class SceneBuilderUI {
     }
 
     _launchRogerExampleScene() {
-        if (!this.hostScene) {
-            console.warn('[SceneBuilderUI] No hostScene available to launch Roger Example');
-            return;
-        }
+        // Obtener la escena actual y el nodo actual
+        const selectedScene = this._getSelectedScene();
+        if (!selectedScene) return;
 
-        this.close();
-        this.hostScene.scene.start(SCENE_KEYS.ROGER_EXAMPLE);
+        const state = this._getPlayState(selectedScene);
+        const currentNode = this._findNodeById(selectedScene, state.currentNodeId);
+        if (!currentNode) return;
+
+        // Obtener el texto en alemán
+        const germanText = currentNode.deLine || currentNode.learningGerman || currentNode.text;
+        
+        // Reproducir la narración sobre la imagen actual (sin cerrar SceneBuilder)
+        narratorService.narrateInGerman(germanText, (subtitleText, languageCode) => {
+            // Callback: actualizar subtítulos si es necesario
+            console.log('[SceneBuilder] Narración reproduciendo:', subtitleText, languageCode);
+        });
+
         this._writeConsole([
-            '> Lanzando escena interactiva: Roger Example',
-            '> Dialogo, narrador aleman y cinetica de karaoke',
+            '> Reproduciendo narración de la escena actual',
+            `> Texto: ${germanText.substring(0, 50)}...`,
+            '> Audio en alemán con subtítulos',
         ]);
     }
 
