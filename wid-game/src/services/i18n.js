@@ -282,6 +282,14 @@ const STRINGS = {
     dict_label_main: { de: 'Haupt-Übersetzung', en: 'Main Translation', es: 'Traducción Principal' },
     dict_save: { de: 'Speichern', en: 'Save', es: 'Guardar' },
     dict_btn_clear: { de: 'LEEREN', en: 'CLEAR', es: 'LIMPIAR' },
+    dict_paste_csv: { de: 'CSV einfügen', en: 'Paste CSV', es: 'Pegar CSV' },
+    dict_paste_ph: { de: 'Fügen Sie hier die CSV-Daten ein...', en: 'Paste CSV data here...', es: 'Pega los datos CSV aquí...' },
+    dict_import_format: { de: 'Format: Wort, Übersetzung, Kategorie, Beispiel', en: 'Format: word, translation, category, example', es: 'Formato: palabra, traducción, categoría, ejemplo' },
+    dict_import_btn: { de: 'IMPORTIEREN', en: 'IMPORT', es: 'IMPORTAR' },
+    dict_btn_starter: { de: 'Starter-Wörter laden', en: 'Load starter words', es: 'Cargar palabras de inicio' },
+    dict_btn_clear_custom: { de: 'Eigene löschen', en: 'Delete custom', es: 'Borrar mías' },
+    dict_btn_clear_all: { de: 'ALLES LÖSCHEN', en: 'DELETE ALL', es: 'BORRAR TODO' },
+    dict_confirm_clear: { de: 'Möchten Sie wirklich alles löschen?', en: 'Are you sure you want to delete everything?', es: '¿Estás seguro de que quieres borrarlo todo?' },
 
     // ── Categories ───────────────────────
     cat_noun: { de: 'Substantiv', en: 'Noun', es: 'Sustantivo', cs: 'Podstatné jméno', ru: 'Существительное' },

@@ -327,6 +327,80 @@ Wasser,Agua,sustantivos,Ein Glas Wasser, bitte."></textarea>
             document.getElementById('categories').textContent = dict.getCategories().length;
         }
 
+        function isCommentOrDividerLine(line) {
+            const t = String(line || '').trim();
+            return (
+                !t ||
+                t.startsWith('//') ||
+                t.startsWith('#') ||
+                t.startsWith('/*') ||
+                t.startsWith('*') ||
+                t.startsWith('*/') ||
+                /^=+$/.test(t) ||
+                /^-+$/.test(t)
+            );
+        }
+
+        function splitDelimitedLine(line, delimiter) {
+            const out = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                const next = line[i + 1];
+
+                if (ch === '"' && inQuotes && next === '"') {
+                    current += '"';
+                    i++;
+                    continue;
+                }
+
+                if (ch === '"') {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (!inQuotes && ch === delimiter) {
+                    out.push(current);
+                    current = '';
+                    continue;
+                }
+
+                current += ch;
+            }
+
+            out.push(current);
+            return out.map(p => p.trim());
+        }
+
+        function detectDelimiter(lines) {
+            const candidates = [',', ';', '\t', '|'];
+            let best = ',';
+            let bestScore = -1;
+
+            candidates.forEach(delim => {
+                let score = 0;
+                let seen = 0;
+                lines.slice(0, 20).forEach(line => {
+                    const parts = splitDelimitedLine(line, delim);
+                    if (parts.length > 1) {
+                        score += parts.length;
+                        seen++;
+                    }
+                });
+                if (seen > 0) {
+                    const avg = score / seen;
+                    if (avg > bestScore) {
+                        bestScore = avg;
+                        best = delim;
+                    }
+                }
+            });
+
+            return best;
+        }
+
         function addSingleWord() {
             const word = document.getElementById('word').value.trim();
             const translation = document.getElementById('translation').value.trim();
@@ -357,11 +431,34 @@ Wasser,Agua,sustantivos,Ein Glas Wasser, bitte."></textarea>
                 return;
             }
 
+            const lines = csv
+                .replace(/^\uFEFF/, '')
+                .split('\n')
+                .map(l => l.trim())
+                .filter(l => !isCommentOrDividerLine(l));
+
+            if (lines.length === 0) {
+                showMessage('⚠️ No se encontraron líneas válidas', 'error');
+                return;
+            }
+
+            const delimiter = detectDelimiter(lines);
+            const firstParts = splitDelimitedLine(lines[0], delimiter).map(p => p.toLowerCase());
+            const hasHeader = firstParts.some(h => ['word', 'palabra', 'translation', 'traduccion', 'traducción', 'category', 'categoria', 'categoría', 'example', 'ejemplo'].includes(h));
+            const dataLines = hasHeader ? lines.slice(1) : lines;
+
             let added = 0;
-            csv.split('\n').forEach(line => {
-                if (!line) return;
-                const [word, translation, category, example] = line.split(',').map(s => s.trim());
-                if (word && translation && dict.addWord(word, translation, category || 'general', example || '')) {
+            dataLines.forEach(line => {
+                const parts = splitDelimitedLine(line, delimiter);
+                if (parts.length < 2) return;
+
+                const word = parts[0];
+                const translation = parts[1];
+                const category = parts[2] || 'general';
+                const joiner = delimiter === ',' ? ', ' : delimiter;
+                const example = parts.length > 3 ? parts.slice(3).join(joiner) : '';
+
+                if (word && translation && dict.addWord(word, translation, category, example)) {
                     added++;
                 }
             });
