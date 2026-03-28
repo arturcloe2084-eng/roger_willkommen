@@ -16,11 +16,14 @@ export function createGameConfig() {
         width: 800,
         height: 500,
         parent: 'game-container',
+        resolution: Math.min(window.devicePixelRatio || 1, 2),
+        autoRound: false,
         scale: {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
-        pixelArt: true,
+        pixelArt: false,
+        antialias: true,
         backgroundColor: '#0a0a1a',
         physics: {
             default: 'arcade',
