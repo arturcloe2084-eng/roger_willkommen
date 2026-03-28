@@ -10,13 +10,6 @@ import {
     getStudyRoomCSS, _renderQuizQuestion
 } from './StudyRoomService.js';
 
-// ── Modos de reproducción de escena ──────────────────────────
-const PLAYBACK_MODES = [
-    { id: 'script', label: 'GUIÓN', icon: '📜', description: 'Sigue el guión paso a paso' },
-    { id: 'choices', label: 'OPCIONES', icon: '🔀', description: 'Elige entre 3 respuestas posibles' },
-    { id: 'voice', label: 'VOZ LIBRE', icon: '🎤', description: 'Conversa libremente con IA' }
-];
-
 const STORAGE_KEY = 'rw_scene_builder_last_scene';
 const CUSTOM_SCENES_KEY = 'rw_scene_builder_custom_scenes';
 const BUILDER_WORKBENCH_ID = '__builder_workbench__';
@@ -26,7 +19,7 @@ export const ROOM_BACKGROUND_URL = 'assets/scene-1-apartamento.png';
 
 const SCENE_CATEGORIES = [
     { id: 'recommended', label: '1. EJEMPLO DE ROGER', subtitle: 'Aprende con la historia guia' },
-    { id: 'custom', label: '2. CREAR ESCENA', subtitle: 'Editor de guión · Sala de estudio · Examen' },
+    { id: 'custom', label: '2. CREAR ESCENA', subtitle: 'Editor de guión · práctica · examen' },
 ];
 
 const SCENE_FALLBACK_VOCABULARY = [
@@ -361,7 +354,6 @@ export class SceneBuilderUI {
         // Nuevas propiedades
         this.currentWorkbenchTab = 'script'; // 'script' | 'study' | 'exam'
         this.currentStudyStrategy = null;
-        this.playbackMode = 'script'; // 'script' | 'choices' | 'voice'
         this.storyNumber = this._getNextStoryNumber();
         this.generatedSong = null;
         this.memoryGameState = null;
@@ -1274,13 +1266,13 @@ export class SceneBuilderUI {
 
         previewEl.innerHTML = `
             <div class="sb-workbench-wrap">
-                <div class="sb-preview-hero sb-workbench-hero" style="background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.86), rgba(20, 20, 0, 0.82)), url('${this._escapeAttr(ROOM_BACKGROUND_URL)}');">
-                    <div class="sb-preview-kicker">CREADOR DE HISTORIAS · HISTORIA #${this.storyNumber}</div>
-                    <div class="sb-preview-title">${draft ? this._escape(draft.title) : 'Nueva Historia'}</div>
-                    <div class="sb-preview-description">Escribe un guión, estudia el vocabulario, aprueba el examen y juega tu escena en 3 modos.</div>
-                    <div class="sb-preview-tags">
-                        ${PLAYBACK_MODES.map(m => `<span class="sb-chip">${m.icon} ${m.label}</span>`).join('')}
+                <div class="sb-workbench-status">
+                    <div class="sb-workbench-status-main">
+                        <span class="sb-chip">Historia ${this.storyNumber}</span>
+                        <span class="sb-chip">${draft ? `${draft.nodes?.length || 0} nodos` : 'Editor listo'}</span>
+                        ${draft?.requiredVocabulary?.length ? `<span class="sb-chip">${draft.requiredVocabulary.length} palabras</span>` : ''}
                     </div>
+                    <div class="sb-workbench-status-copy">${draft ? this._escape(draft.title) : 'Crea una escena simple y preparala para estudiar.'}</div>
                 </div>
 
                 <div class="sb-wb-tabs">${tabNav}</div>
@@ -1312,17 +1304,6 @@ export class SceneBuilderUI {
 
         return `
             <div class="sb-script-editor">
-                <div class="sb-info-block">
-                    <div class="sb-info-title">📋 Formato de guión</div>
-                    <div class="sb-info-line">Escribe tu historia siguiendo el formato teatral: HISTORIA, ESCENA, PERSONAJES, diálogos y decisiones.</div>
-                    <div class="sb-info-line" style="color: #ffcc00;">Formato: <code>PERSONAJE: Diálogo en alemán</code> · <code>[NARRACIÓN] Texto descriptivo</code> · <code>[DECISIÓN]</code></div>
-                </div>
-
-                <div class="sb-info-block">
-                    <div class="sb-info-title">🎬 Plantillas de guión — elige una para empezar rápido</div>
-                    <div class="sb-templates-grid">${templateCards}</div>
-                </div>
-
                 <div class="sb-builder-grid">
                     <label class="sb-field">
                         <span>Título de la historia</span>
@@ -1338,45 +1319,59 @@ export class SceneBuilderUI {
                     </label>
                 </div>
 
-                <label class="sb-field sb-field-full">
-                    <span>✍️ Guión de la escena</span>
-                    <textarea id="sb-draft-script" rows="14" placeholder="HISTORIA: Título\nESCENA 1: Nombre de la escena\nLUGAR: Descripción del lugar\nPERSONAJES: Nombre1, Nombre2\n---\n[NARRACIÓN] Llegas al lugar...\nPersonaje: Guten Tag! Haben Sie einen Termin?\n[DECISIÓN]\n> Opción A -> ESCENA 2\n> Opción B -> ESCENA 3">${this._escape(draft?.scriptRaw || '')}</textarea>
-                </label>
+                <div class="sb-script-layout">
+                    <div class="sb-script-main">
+                        <div class="sb-panel">
+                            <div class="sb-panel-head">
+                                <div class="sb-panel-title">Guion de la escena</div>
+                                <div class="sb-panel-kicker">PERSONAJE: dialogo · [NARRACION] descripcion · [DECISION]</div>
+                            </div>
+                            <label class="sb-field sb-field-full">
+                                <textarea id="sb-draft-script" rows="16" placeholder="HISTORIA: Título\nESCENA 1: Nombre de la escena\nLUGAR: Descripción del lugar\nPERSONAJES: Nombre1, Nombre2\n---\n[NARRACIÓN] Llegas al lugar...\nPersonaje: Guten Tag! Haben Sie einen Termin?\n[DECISIÓN]\n> Opción A -> ESCENA 2\n> Opción B -> ESCENA 3">${this._escape(draft?.scriptRaw || '')}</textarea>
+                            </label>
+                        </div>
+                        <div id="sb-script-validation" class="sb-validation-box"></div>
+                    </div>
 
-                <div id="sb-script-validation" class="sb-validation-box"></div>
+                    <div class="sb-script-side">
+                        <div class="sb-panel">
+                            <div class="sb-panel-head">
+                                <div class="sb-panel-title">Plantillas</div>
+                                <div class="sb-panel-kicker">Empieza rapido</div>
+                            </div>
+                            <div class="sb-templates-grid">${templateCards}</div>
+                        </div>
 
-                <div class="sb-info-block">
-                    <div class="sb-info-title">🖼️ Imágenes de las escenas</div>
-                    <div class="sb-info-line">Puedes pegar rutas de fotos reales o generar descripciones con IA.</div>
-                    <div class="sb-image-options">
-                        <label class="sb-field" style="flex:1">
-                            <span>Fotos reales (una por línea)</span>
-                            <textarea id="sb-draft-images" rows="3" placeholder="assets/mi-foto-1.jpg&#10;https://ejemplo.com/foto.jpg">${this._escape((draft?.referenceImages || []).join('\n'))}</textarea>
-                        </label>
-                        <div class="sb-image-gen-panel">
-                            <button id="sb-gen-images" class="sb-load-btn">🤖 Generar con IA</button>
-                            <div id="sb-gen-image-result" class="sb-gen-result"></div>
+                        <div class="sb-panel">
+                            <div class="sb-panel-head">
+                                <div class="sb-panel-title">Imagenes</div>
+                                <div class="sb-panel-kicker">Fotos reales o ayuda IA</div>
+                            </div>
+                            <div class="sb-image-options">
+                                <label class="sb-field" style="flex:1">
+                                    <span>Fotos reales (una por línea)</span>
+                                    <textarea id="sb-draft-images" rows="5" placeholder="assets/mi-foto-1.jpg&#10;https://ejemplo.com/foto.jpg">${this._escape((draft?.referenceImages || []).join('\n'))}</textarea>
+                                </label>
+                                <div class="sb-image-gen-panel">
+                                    <button id="sb-gen-images" class="sb-load-btn">🤖 Generar con IA</button>
+                                    <div id="sb-gen-image-result" class="sb-gen-result"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sb-panel sb-panel-muted">
+                            <div class="sb-panel-title">Flujo</div>
+                            <div class="sb-info-line">1. Escribe o usa una plantilla.</div>
+                            <div class="sb-info-line">2. Prepara la escena para extraer vocabulario.</div>
+                            <div class="sb-info-line">3. Pasa a estudiar y luego al examen.</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="sb-info-block">
-                    <div class="sb-info-title">🎮 Modo de reproducción de la escena</div>
-                    <div class="sb-playback-modes">
-                        ${PLAYBACK_MODES.map(m => `
-                            <button class="sb-playback-mode-btn ${this.playbackMode === m.id ? 'active' : ''}" data-mode="${m.id}">
-                                <span class="sb-pb-icon">${m.icon}</span>
-                                <span class="sb-pb-label">${m.label}</span>
-                                <span class="sb-pb-desc">${m.description}</span>
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>
-
                 <div class="sb-builder-actions">
-                    <button id="sb-gen-script-btn" class="sb-load-btn" style="background:rgba(138,43,226,0.2); border-color:#da83ff; color:#da83ff;">🤖 Generar con IA y Diccionario</button>
                     <button id="sb-prepare-draft-btn" class="sb-load-btn">✅ Preparar estudio y escena</button>
                     <button id="sb-validate-script-btn" class="sb-load-btn">🔍 Validar guión</button>
+                    <button id="sb-gen-script-btn" class="sb-load-btn" style="background:rgba(138,43,226,0.2); border-color:#da83ff; color:#da83ff;">🤖 Generar con IA y Diccionario</button>
                 </div>
             </div>
         `;
@@ -1478,16 +1473,6 @@ export class SceneBuilderUI {
             });
         });
 
-        // ── Playback mode buttons ──
-        document.querySelectorAll('[data-mode]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.playbackMode = btn.dataset.mode;
-                document.querySelectorAll('.sb-playback-mode-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this._writeConsole([`> Modo de reproducción: ${this.playbackMode.toUpperCase()}`]);
-            });
-        });
-
         // ── Story/Scene number ──
         document.getElementById('sb-story-num')?.addEventListener('change', (e) => {
             this.storyNumber = parseInt(e.target.value) || 1;
@@ -1568,7 +1553,10 @@ export class SceneBuilderUI {
             });
         });
 
-        // ── Study strategies ──
+        this._bindStudyStrategyEvents();
+    }
+
+    _bindStudyStrategyEvents() {
         document.querySelectorAll('[data-strategy]').forEach(btn => {
             btn.addEventListener('click', () => {
                 this.currentStudyStrategy = btn.dataset.strategy;
@@ -1579,9 +1567,10 @@ export class SceneBuilderUI {
 
     async _loadStudyGame(strategyId) {
         const gameArea = document.getElementById('sr-game-area');
-        if (!gameArea || !this.studyDraft) return;
+        const activeStudyDraft = this._getActiveStudyDraft();
+        if (!gameArea || !activeStudyDraft) return;
 
-        const words = this.studyDraft.requiredVocabulary || [];
+        const words = activeStudyDraft.requiredVocabulary || [];
         document.querySelectorAll('.sr-strategy-card').forEach(c => c.classList.remove('active'));
         document.querySelector(`[data-strategy="${strategyId}"]`)?.classList.add('active');
 
@@ -2434,6 +2423,10 @@ export class SceneBuilderUI {
         return this._findSceneById(this.selectedSceneId)?.scene || null;
     }
 
+    _getActiveStudyDraft() {
+        return this.studyDraft;
+    }
+
     _getWorkbenchCard() {
         return {
             sceneId: BUILDER_WORKBENCH_ID,
@@ -3024,6 +3017,12 @@ export class SceneBuilderUI {
                 flex-wrap: wrap;
                 gap: 8px;
             }
+            .sb-builder-message {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid rgba(0, 255, 65, 0.12);
+                background: rgba(0, 0, 0, 0.38);
+            }
             .sb-chip {
                 display: inline-flex;
                 align-items: center;
@@ -3399,36 +3398,53 @@ export class SceneBuilderUI {
             .sb-workbench-wrap {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 14px;
+            }
+            .sb-workbench-status {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 14px;
+                border: 1px solid rgba(0, 255, 65, 0.14);
+                background: linear-gradient(180deg, rgba(0, 0, 0, 0.54), rgba(0, 18, 0, 0.32));
+            }
+            .sb-workbench-status-main {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .sb-workbench-status-copy {
+                font-size: 18px;
+                line-height: 1.3;
+                color: var(--sb-amber);
             }
             /* ── Workbench Tabs ── */
             .sb-wb-tabs {
                 display: flex;
-                gap: 4px;
-                border-bottom: 2px solid rgba(0, 255, 65, 0.16);
-                margin-bottom: 4px;
+                gap: 8px;
+                margin-bottom: 2px;
             }
             .sb-wb-tab {
                 display: flex;
                 flex-direction: column;
-                align-items: center;
-                gap: 2px;
+                align-items: flex-start;
+                gap: 4px;
                 flex: 1;
-                padding: 10px 12px;
+                min-width: 0;
+                padding: 12px 14px;
                 border: 1px solid rgba(0, 255, 65, 0.12);
-                border-bottom: none;
                 background: rgba(0, 0, 0, 0.52);
                 color: #5c805f;
                 cursor: pointer;
                 font: inherit;
-                text-align: center;
+                text-align: left;
                 transition: all 0.15s;
             }
             .sb-wb-tab.active {
                 color: var(--sb-green);
-                background: rgba(0, 40, 10, 0.5);
+                background: linear-gradient(180deg, rgba(0, 40, 10, 0.58), rgba(0, 0, 0, 0.58));
                 border-color: rgba(0, 255, 65, 0.3);
-                box-shadow: inset 0 -2px 0 var(--sb-green);
+                box-shadow: inset 0 0 0 1px rgba(0, 255, 65, 0.1);
             }
             .sb-wb-tab:hover:not(.locked) {
                 color: var(--sb-cyan);
@@ -3442,6 +3458,34 @@ export class SceneBuilderUI {
             .sb-wb-tab-desc { font-size: 12px; color: #7ea286; }
             .sb-wb-tab.active .sb-wb-tab-desc { color: #8bd89a; }
             .sb-wb-content { display: flex; flex-direction: column; gap: 12px; }
+
+            .sb-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 14px;
+                border: 1px solid rgba(0, 255, 65, 0.14);
+                background: rgba(0, 0, 0, 0.45);
+            }
+            .sb-panel-muted {
+                background: rgba(0, 18, 0, 0.28);
+            }
+            .sb-panel-head {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .sb-panel-title {
+                font-size: 15px;
+                color: var(--sb-amber);
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+            }
+            .sb-panel-kicker {
+                font-size: 13px;
+                color: #8bd89a;
+                line-height: 1.35;
+            }
 
             /* ── Template Cards ── */
             .sb-templates-grid {
@@ -3473,51 +3517,18 @@ export class SceneBuilderUI {
             .sb-template-name { font-size: 15px; color: var(--sb-amber); }
             .sb-template-desc { font-size: 12px; color: #7ea286; }
 
-            /* ── Playback Mode Selector ── */
-            .sb-playback-modes {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-            }
-            .sb-playback-mode-btn {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-                padding: 12px 8px;
-                border: 1px solid rgba(0, 255, 65, 0.16);
-                background: rgba(0, 0, 0, 0.52);
-                color: #00ff41;
-                cursor: pointer;
-                font: inherit;
-                text-align: center;
-                transition: all 0.2s;
-            }
-            .sb-playback-mode-btn.active {
-                border-color: var(--sb-cyan);
-                background: rgba(0, 40, 50, 0.35);
-                box-shadow: 0 0 16px rgba(0, 215, 255, 0.12);
-            }
-            .sb-playback-mode-btn:hover {
-                border-color: var(--sb-cyan);
-                color: var(--sb-cyan);
-            }
-            .sb-pb-icon { font-size: 28px; }
-            .sb-pb-label { font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
-            .sb-pb-desc { font-size: 12px; color: #7ea286; }
-            .sb-playback-mode-btn.active .sb-pb-label { color: var(--sb-cyan); }
-
             /* ── Image Gen Panel ── */
             .sb-image-options {
                 display: flex;
-                gap: 12px;
-                align-items: flex-start;
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
             }
             .sb-image-gen-panel {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
-                min-width: 180px;
+                min-width: 0;
             }
             .sb-gen-result { font-size: 13px; }
 
@@ -3525,7 +3536,20 @@ export class SceneBuilderUI {
             .sb-validation-box { margin-top: 2px; }
 
             /* ── Script Editor ── */
-            .sb-script-editor { display: flex; flex-direction: column; gap: 12px; }
+            .sb-script-editor { display: flex; flex-direction: column; gap: 14px; }
+            .sb-script-layout {
+                display: grid;
+                grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+                gap: 12px;
+                align-items: start;
+            }
+            .sb-script-main,
+            .sb-script-side {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                min-width: 0;
+            }
             .sb-script-editor code {
                 background: rgba(0,255,65,0.06);
                 padding: 2px 6px;
@@ -3560,6 +3584,9 @@ export class SceneBuilderUI {
                 border: 1px solid rgba(0, 255, 65, 0.16);
                 color: var(--sb-green);
                 resize: vertical;
+            }
+            #sb-draft-script {
+                min-height: 420px;
             }
             .sb-field input:focus,
             .sb-field textarea:focus {
@@ -3610,6 +3637,7 @@ export class SceneBuilderUI {
                 .sb-guide-grid,
                 .sb-play-wrap,
                 .sb-story-player,
+                .sb-script-layout,
                 .sb-builder-grid,
                 .sb-vocab-row,
                 .sb-preview-meta,
@@ -3619,10 +3647,16 @@ export class SceneBuilderUI {
                 .sb-play-image {
                     height: 320px;
                 }
+                #sb-draft-script {
+                    min-height: 340px;
+                }
             }
             @media (max-width: 720px) {
                 .sb-desktop {
                     grid-template-columns: 1fr;
+                }
+                .sb-wb-tabs {
+                    flex-direction: column;
                 }
                 .sb-play-stage-meta,
                 .sb-play-head {

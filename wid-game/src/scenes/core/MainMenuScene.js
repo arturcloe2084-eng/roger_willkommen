@@ -17,7 +17,7 @@ const MENU_HOTSPOTS = Object.freeze([
         id: 'play',
         kind: 'desk',
         hotkey: 'P',
-        badge: 'PLAY',
+        badgeKey: 'menu_hotspot_play_badge',
         titleKey: 'menu_hotspot_play_title',
         descriptionKey: 'menu_hotspot_play_desc',
         endpoint: '/story/roger-example',
@@ -29,7 +29,7 @@ const MENU_HOTSPOTS = Object.freeze([
         id: 'builder',
         kind: 'desk',
         hotkey: 'A',
-        badge: 'DISK A',
+        badgeKey: 'menu_hotspot_builder_badge',
         titleKey: 'menu_hotspot_builder_title',
         descriptionKey: 'menu_hotspot_builder_desc',
         endpoint: '/tools/scene-builder',
@@ -41,7 +41,7 @@ const MENU_HOTSPOTS = Object.freeze([
         id: 'dictionary',
         kind: 'desk',
         hotkey: 'D',
-        badge: 'BOOK',
+        badgeKey: 'menu_hotspot_dictionary_badge',
         titleKey: 'menu_hotspot_dictionary_title',
         descriptionKey: 'menu_hotspot_dictionary_desc',
         endpoint: '/tools/dictionary',
@@ -53,7 +53,7 @@ const MENU_HOTSPOTS = Object.freeze([
         id: 'settings',
         kind: 'corner',
         hotkey: 'S',
-        badge: 'SYSTEM',
+        badgeKey: 'menu_hotspot_settings_badge',
         titleKey: 'menu_hotspot_settings_title',
         descriptionKey: 'menu_hotspot_settings_desc',
         endpoint: '/system/settings',
@@ -121,6 +121,12 @@ export class MainMenuScene extends Phaser.Scene {
         this._bootMask = null;
         this._menuBackground = null;
         this._menuShadows = null;
+        this._playTransitionVideo = null;
+        this._playTransitionBackdrop = null;
+        this._playTransitionFallback = null;
+        this._playTransitionDidStart = false;
+        this._playTransitionClosing = false;
+        this._isStartingGame = false;
     }
 
     _createBackgroundLayer(width, height, menuBgKey, hideInitially) {
@@ -372,10 +378,10 @@ export class MainMenuScene extends Phaser.Scene {
         });
 
         container.add(title);
-        this._createShortcutChip(container, 16, 38, 'P', 'PLAY');
-        this._createShortcutChip(container, 128, 38, 'A', 'DISK A');
-        this._createShortcutChip(container, 16, 66, 'D', 'BOOK');
-        this._createShortcutChip(container, 128, 66, 'S', 'SYSTEM');
+        this._createShortcutChip(container, 16, 38, 'P', i18n.t('menu_shortcut_play'));
+        this._createShortcutChip(container, 128, 38, 'A', i18n.t('menu_shortcut_builder'));
+        this._createShortcutChip(container, 16, 66, 'D', i18n.t('menu_shortcut_dictionary'));
+        this._createShortcutChip(container, 128, 66, 'S', i18n.t('menu_shortcut_settings'));
         this._createShortcutChip(container, 16, 94, 'ENTER', i18n.t('menu_open').toUpperCase(), { keyWidth: 54, textColor: '#f7efc4', labelFontSize: '17px' });
         this._createShortcutChip(container, 136, 94, 'SPACE', i18n.t('menu_open').toUpperCase(), { keyWidth: 54, textColor: '#f7efc4', labelFontSize: '17px' });
 
@@ -440,10 +446,11 @@ export class MainMenuScene extends Phaser.Scene {
         outline.strokeRoundedRect(-frame.w / 2, -frame.h / 2, frame.w, frame.h, 14);
         this._drawHighlightCorners(outline, frame.w, frame.h);
 
-        const badgeWidth = Math.max(92, (def.badge.length * 9) + 36);
+        const badgeLabel = i18n.t(def.badgeKey);
+        const badgeWidth = Math.max(92, (badgeLabel.length * 9) + 36);
         const badgeBg = this.add.rectangle(-frame.w / 2 + (badgeWidth / 2), -frame.h / 2 - 18, badgeWidth, 24, 0x150f02, 0.98)
             .setStrokeStyle(1, HOTSPOT_COLOR, 0.78);
-        const badgeText = this.add.text(badgeBg.x, badgeBg.y - 1, `[${def.hotkey}] ${def.badge}`, {
+        const badgeText = this.add.text(badgeBg.x, badgeBg.y - 1, `[${def.hotkey}] ${badgeLabel}`, {
             fontFamily: 'VT323',
             fontSize: '18px',
             color: '#ffe28c',
@@ -504,6 +511,7 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     _createCornerHotspot(def, width) {
+        const label = i18n.t(def.badgeKey);
         const x = width - 106;
         const y = 46;
         const container = this.add.container(x, y)
@@ -518,7 +526,7 @@ export class MainMenuScene extends Phaser.Scene {
             fontSize: '18px',
             color: '#ffe08a',
         }).setOrigin(0.5);
-        const labelText = this.add.text(-20, -1, 'SYSTEM', {
+        const labelText = this.add.text(-20, -1, label, {
             fontFamily: 'VT323',
             fontSize: '21px',
             color: '#dbe2ec',
@@ -741,6 +749,7 @@ export class MainMenuScene extends Phaser.Scene {
             this._introVideo.destroy();
         }
         this._introVideo = null;
+        this._clearPlayTransitionMedia(true);
 
         this._closeSettings();
 
@@ -902,12 +911,183 @@ export class MainMenuScene extends Phaser.Scene {
         });
     }
 
+    _clearPlayTransitionMedia(stopVideo = false) {
+        if (this._playTransitionFallback) {
+            this._playTransitionFallback.remove(false);
+            this._playTransitionFallback = null;
+        }
+
+        const playTransitionVideo = this._playTransitionVideo;
+        this._playTransitionVideo = null;
+        if (playTransitionVideo?.active) {
+            if (stopVideo && typeof playTransitionVideo.stop === 'function') {
+                playTransitionVideo.stop();
+            }
+            playTransitionVideo.destroy();
+        }
+
+        const playTransitionBackdrop = this._playTransitionBackdrop;
+        this._playTransitionBackdrop = null;
+        if (playTransitionBackdrop?.active) {
+            playTransitionBackdrop.destroy();
+        }
+
+        this._playTransitionDidStart = false;
+        this._playTransitionClosing = false;
+    }
+
+    _getVideoCoverScale(video, targetWidth, targetHeight) {
+        const htmlVideo = video?.video;
+        if (!htmlVideo?.videoWidth || !htmlVideo?.videoHeight) return 1;
+        return Math.max(targetWidth / htmlVideo.videoWidth, targetHeight / htmlVideo.videoHeight) || 1;
+    }
+
+    _launchRogerExampleStory() {
+        this.scene.start(SCENE_KEYS.ROGER_EXAMPLE, { source: 'main-menu-play' });
+    }
+
+    _finishPlayTransition(forceStopVideo = false) {
+        if (this._playTransitionClosing) return;
+        this._playTransitionClosing = true;
+
+        const playTransitionVideo = this._playTransitionVideo;
+        const playTransitionBackdrop = this._playTransitionBackdrop;
+        const duration = 320;
+
+        if (playTransitionVideo?.active) {
+            this.tweens.killTweensOf(playTransitionVideo);
+            this.tweens.add({
+                targets: playTransitionVideo,
+                alpha: 0,
+                duration,
+                ease: 'Quad.easeIn',
+            });
+        }
+
+        if (playTransitionBackdrop?.active) {
+            this.tweens.killTweensOf(playTransitionBackdrop);
+            this.tweens.add({
+                targets: playTransitionBackdrop,
+                alpha: 1,
+                duration,
+                ease: 'Cubic.easeIn',
+            });
+        }
+
+        this.time.delayedCall(duration + 40, () => {
+            this._clearPlayTransitionMedia(forceStopVideo);
+            this._launchRogerExampleStory();
+        });
+    }
+
+    _playMonitorTransition() {
+        const { width, height } = this.cameras.main;
+        const playHotspotDef = MENU_HOTSPOTS.find((hotspot) => hotspot.id === 'play');
+        const playFrame = playHotspotDef ? scaleRect(width, height, playHotspotDef.frame) : {
+            x: width / 2,
+            y: height / 2,
+            w: width * 0.34,
+            h: height * 0.42,
+        };
+
+        const backdrop = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1)
+            .setDepth(34)
+            .setAlpha(0);
+        const transitionVideo = this.add.video(playFrame.x, playFrame.y, 'menu_monitor_video')
+            .setDepth(35)
+            .setAlpha(0);
+
+        this._playTransitionBackdrop = backdrop;
+        this._playTransitionVideo = transitionVideo;
+        this._playTransitionDidStart = false;
+        this._playTransitionClosing = false;
+
+        if (this.input?.keyboard) {
+            this.input.keyboard.enabled = false;
+        }
+
+        this._menuHotspotsEnabled = false;
+        this._clearHotspotFocus(true);
+        this.tweens.killTweensOf(this._uiContainer);
+        this.tweens.killTweensOf(this._backgroundLayer);
+
+        this.tweens.add({
+            targets: this._uiContainer,
+            alpha: 0,
+            y: -10,
+            duration: 260,
+            ease: 'Cubic.easeIn',
+        });
+        this.tweens.add({
+            targets: this._backgroundLayer,
+            alpha: 0.24,
+            duration: 260,
+            ease: 'Quad.easeOut',
+        });
+        this.tweens.add({
+            targets: backdrop,
+            alpha: 0.34,
+            duration: 260,
+            ease: 'Quad.easeOut',
+        });
+
+        const animateVideo = () => {
+            if (this._playTransitionDidStart || !transitionVideo.active) return;
+            this._playTransitionDidStart = true;
+
+            const startScale = this._getVideoCoverScale(transitionVideo, playFrame.w * 0.76, playFrame.h * 0.72);
+            const fullScale = this._getVideoCoverScale(transitionVideo, width, height);
+
+            transitionVideo
+                .setScale(startScale * 0.94)
+                .setRotation(playFrame.rotation * 0.35)
+                .setAlpha(0.05);
+
+            this.tweens.add({
+                targets: transitionVideo,
+                x: width / 2,
+                y: height / 2,
+                alpha: 1,
+                scaleX: fullScale,
+                scaleY: fullScale,
+                rotation: 0,
+                duration: 620,
+                ease: 'Cubic.easeOut',
+            });
+            this.tweens.add({
+                targets: backdrop,
+                alpha: 0.12,
+                duration: 620,
+                ease: 'Quad.easeOut',
+            });
+        };
+
+        [120, 420, 960].forEach((delay) => this.time.delayedCall(delay, animateVideo));
+
+        transitionVideo.on('play', animateVideo);
+        transitionVideo.on('complete', () => this._finishPlayTransition());
+
+        this._playTransitionFallback = this.time.delayedCall(1800, () => {
+            if (this._playTransitionDidStart || !this._playTransitionVideo?.active) return;
+            this._finishPlayTransition(true);
+        });
+
+        transitionVideo.play(false);
+        transitionVideo.setVolume(1.0);
+    }
+
     _startGame() {
-        if (this._settingsOverlay) return;
+        if (this._settingsOverlay || this._isStartingGame) return;
+        this._isStartingGame = true;
+
+        if (this.cache.video.exists('menu_monitor_video')) {
+            this._playMonitorTransition();
+            return;
+        }
 
         this.cameras.main.fadeOut(380, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
-            this.scene.start(SCENE_KEYS.ROGER_EXAMPLE, { source: 'main-menu-play' });
+            this._launchRogerExampleStory();
         });
     }
 

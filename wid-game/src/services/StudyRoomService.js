@@ -66,8 +66,14 @@ function tagWordsWithStoryRef(words, storyNumber, sceneNumber) {
 /**
  * Genera el layout HTML de la sala de estudio
  */
-function renderStudyRoomHTML(words, storyTitle, storyNumber, sceneNumber, currentStrategy = null) {
+function renderStudyRoomHTML(words, storyTitle, storyNumber, sceneNumber, currentStrategy = null, options = {}) {
     const taggedWords = tagWordsWithStoryRef(words, storyNumber, sceneNumber);
+    const roomKicker = options.roomKicker || 'SALA DE ESTUDIO · LERNZIMMER';
+    const roomMeta = options.roomMeta || `Historia ${storyNumber} · ${taggedWords.length} palabras para estudiar`;
+    const vocabStripTitle = options.vocabStripTitle || `📚 Vocabulario de la escena ${storyNumber}/${sceneNumber}`;
+    const strategyTitle = options.strategyTitle || '🎯 Elige tu estrategia de aprendizaje';
+    const emptyState = options.emptyState || 'Selecciona una estrategia para comenzar a estudiar';
+    const showVocabStrip = options.showVocabStrip !== false;
 
     const strategyCards = STUDY_STRATEGIES.map(s => `
         <button class="sr-strategy-card ${currentStrategy === s.id ? 'active' : ''}" 
@@ -97,26 +103,28 @@ function renderStudyRoomHTML(words, storyTitle, storyNumber, sceneNumber, curren
                     <div class="sr-room-ambience">
                         <div class="sr-lamp">💡</div>
                         <div class="sr-room-title">
-                            <div class="sr-room-kicker">SALA DE ESTUDIO · LERNZIMMER</div>
+                            <div class="sr-room-kicker">${_escape(roomKicker)}</div>
                             <div class="sr-room-name">${_escape(storyTitle)}</div>
-                            <div class="sr-room-meta">Historia ${storyNumber} · ${taggedWords.length} palabras para estudiar</div>
+                            <div class="sr-room-meta">${_escape(roomMeta)}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            ${showVocabStrip ? `
             <div class="sr-vocab-strip">
-                <div class="sr-vocab-strip-title">📚 Vocabulario de la escena ${storyNumber}/${sceneNumber}</div>
+                <div class="sr-vocab-strip-title">${_escape(vocabStripTitle)}</div>
                 <div class="sr-word-chips">${wordList}</div>
             </div>
+            ` : ''}
 
             <div class="sr-strategies-grid">
-                <div class="sr-strategies-title">🎯 Elige tu estrategia de aprendizaje</div>
+                <div class="sr-strategies-title">${_escape(strategyTitle)}</div>
                 <div class="sr-strategies-list">${strategyCards}</div>
             </div>
 
             <div id="sr-game-area" class="sr-game-area">
-                ${currentStrategy ? '' : '<div class="sr-game-placeholder">Selecciona una estrategia para comenzar a estudiar</div>'}
+                ${currentStrategy ? '' : `<div class="sr-game-placeholder">${_escape(emptyState)}</div>`}
             </div>
         </div>
     `;

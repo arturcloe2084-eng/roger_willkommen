@@ -3,6 +3,18 @@ import { SCENE_KEYS } from '../../config/sceneKeys.js';
 import { DictionaryManager } from '../../services/DictionaryManager.js';
 import { API_CONFIG } from '../../config/apiConfig.js';
 import { i18n } from '../../services/i18n.js';
+import {
+  renderStudyRoomHTML,
+  renderMemoryGame,
+  renderCrosswordGame,
+  renderFlashcardGame,
+  renderKaraokeGame,
+  renderQuizGame,
+  getStudyRoomCSS,
+  _renderQuizQuestion
+} from '../../services/StudyRoomService.js';
+import { generateSong } from '../../services/ScriptEditorService.js';
+import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
 
 /* ─────────────────────────────────────────────────────────────
    DictionaryScene  v2
@@ -25,6 +37,10 @@ export class DictionaryScene extends Phaser.Scene {
     this._audioChunks = [];
     this._recordings = {};        // { word: blobURL }
     this._sceneFilter = 'all';    // 'all' or specific scene ref like 'H1/E1'
+    this._viewMode = 'dictionary';
+    this._studyStrategy = null;
+    this._studyGeneratedSong = null;
+    this._studyFlashcardIndex = 0;
   }
 
   init(data) {
@@ -90,6 +106,7 @@ export class DictionaryScene extends Phaser.Scene {
 
     this._bindEvents();
     this._renderWordList();
+    this._syncViewMode();
   }
 
   _unmountOverlay() {
@@ -189,6 +206,7 @@ export class DictionaryScene extends Phaser.Scene {
         <div>Sin palabras — agrega con el formulario de arriba o importa un archivo</div>
       </div>`;
       this._updateStats(words);
+      if (this._viewMode === 'study') this._renderStudyRoom();
       return;
     }
 
@@ -256,6 +274,7 @@ export class DictionaryScene extends Phaser.Scene {
 
     this._bindCardEvents(listEl);
     this._updateStats(words);
+    if (this._viewMode === 'study') this._renderStudyRoom();
   }
 
   _updateStats(words) {
@@ -274,6 +293,111 @@ export class DictionaryScene extends Phaser.Scene {
       if (found < total) text += ` · ${found} ${fLabel}`;
       statsEl.textContent = text;
     }
+  }
+
+  _getStudyWords() {
+    const pinnedWords = this.dictionary.getPinnedWords().filter((item) => item?.word && (item?.translation || item?.translation1));
+    const allWords = this.dictionary.getAll().filter((item) => item?.word && (item?.translation || item?.translation1));
+    const seen = new Set();
+    const merged = [];
+
+    [...pinnedWords, ...allWords].forEach((item) => {
+      const word = String(item.word || '').trim();
+      const translation = String(item.translation || item.translation1 || '').trim();
+      if (!word || !translation) return;
+
+      const key = `${word.toLowerCase()}::${translation.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+
+      merged.push({
+        ...item,
+        word,
+        translation,
+        example: item.example || '',
+        category: item.category || 'diccionario'
+      });
+    });
+
+    return merged;
+  }
+
+  _updateStudyStats(words) {
+    const statsEl = document.getElementById('dict-stats');
+    if (!statsEl) return;
+
+    const pinned = this.dictionary.getPinnedWords().length;
+    statsEl.textContent = `Sala de estudios · ${words.length} palabras y frases · 📌${pinned} fijadas`;
+  }
+
+  _setViewMode(mode = 'dictionary') {
+    this._viewMode = mode;
+    this._syncViewMode();
+  }
+
+  _syncViewMode() {
+    const isStudyMode = this._viewMode === 'study';
+    ['dict-form-section', 'dict-toolbar', 'dict-list-wrap'].forEach((id) => {
+      document.getElementById(id)?.classList.toggle('dict-section-hidden', isStudyMode);
+    });
+    document.getElementById('dict-study-section')?.classList.toggle('dict-section-hidden', !isStudyMode);
+    document.getElementById('dict-mode-dictionary')?.classList.toggle('active', !isStudyMode);
+    document.getElementById('dict-mode-study')?.classList.toggle('active', isStudyMode);
+
+    if (isStudyMode) {
+      this._renderStudyRoom();
+      return;
+    }
+
+    this._updateStats(this._getFiltered());
+  }
+
+  _renderStudyRoom() {
+    const sectionEl = document.getElementById('dict-study-section');
+    if (!sectionEl) return;
+
+    const words = this._getStudyWords();
+    this._updateStudyStats(words);
+
+    if (!words.length) {
+      sectionEl.innerHTML = `
+        <div class="dict-study-empty">
+          <div class="dict-study-empty-icon">📚</div>
+          <div class="dict-study-empty-title">Tu sala de estudios todavía está vacía</div>
+          <div class="dict-study-empty-copy">Agrega palabras o importa vocabulario al diccionario y aquí aparecerán las 5 opciones de repaso.</div>
+        </div>
+      `;
+      return;
+    }
+
+    sectionEl.innerHTML = renderStudyRoomHTML(
+      words,
+      'Diccionario personal',
+      'DICT',
+      '01',
+      this._studyStrategy,
+      {
+        roomKicker: 'SALA DE ESTUDIOS · DICCIONARIO',
+        roomMeta: `${words.length} palabras y frases listas para repasar`,
+        showVocabStrip: false,
+        strategyTitle: '🎯 Las 5 opciones de estudio del diccionario',
+        emptyState: 'Elige una actividad: memoria, crucigrama, karaoke, flashcards o test rápido',
+      }
+    );
+
+    this._bindStudyRoomEvents();
+    if (this._studyStrategy) {
+      this._loadStudyGame(this._studyStrategy);
+    }
+  }
+
+  _bindStudyRoomEvents() {
+    document.querySelectorAll('[data-strategy]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this._studyStrategy = btn.dataset.strategy;
+        this._loadStudyGame(btn.dataset.strategy);
+      });
+    });
   }
 
   /* ── Card event binding ─────────────────────────────── */
@@ -348,6 +472,238 @@ export class DictionaryScene extends Phaser.Scene {
         const word = card.dataset.word;
         this._selectWord(word);
       });
+    });
+  }
+
+  async _loadStudyGame(strategyId) {
+    const gameArea = document.getElementById('sr-game-area');
+    const words = this._getStudyWords();
+    if (!gameArea || !words.length) return;
+
+    document.querySelectorAll('.sr-strategy-card').forEach((card) => card.classList.remove('active'));
+    document.querySelector(`[data-strategy="${strategyId}"]`)?.classList.add('active');
+
+    switch (strategyId) {
+      case 'memory':
+        gameArea.innerHTML = renderMemoryGame(words);
+        this._bindMemoryGame();
+        break;
+      case 'crossword':
+        gameArea.innerHTML = renderCrosswordGame(words);
+        this._bindCrosswordGame();
+        break;
+      case 'flashcard':
+        this._studyFlashcardIndex = 0;
+        gameArea.innerHTML = renderFlashcardGame(words);
+        this._bindFlashcardGame(words);
+        break;
+      case 'karaoke':
+        gameArea.innerHTML = renderKaraokeGame(words, this._studyGeneratedSong);
+        this._bindKaraokeGame(words);
+        if (!this._studyGeneratedSong) {
+          await this._generateStudySong(words);
+        }
+        break;
+      case 'quiz':
+        gameArea.innerHTML = renderQuizGame(words);
+        this._bindQuizGame(words);
+        break;
+      default:
+        break;
+    }
+  }
+
+  _bindMemoryGame() {
+    let flippedCards = [];
+    let matchCount = 0;
+    const totalPairs = parseInt(document.querySelector('.sr-memory-grid')?.dataset.pairs) || 6;
+
+    document.querySelectorAll('.sr-memory-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+        if (flippedCards.length >= 2) return;
+
+        card.classList.add('flipped');
+        flippedCards.push(card);
+
+        if (flippedCards.length === 2) {
+          const [a, b] = flippedCards;
+          if (a.dataset.pair === b.dataset.pair && a.dataset.type !== b.dataset.type) {
+            setTimeout(() => {
+              a.classList.add('matched');
+              b.classList.add('matched');
+              matchCount++;
+              const scoreEl = document.getElementById('sr-memory-score');
+              if (scoreEl) scoreEl.textContent = `${matchCount} / ${totalPairs}`;
+              if (matchCount >= totalPairs) {
+                this._showToast('🎉 Juego de memoria completado');
+                playerProgressStore.addXP(15);
+              }
+              flippedCards = [];
+            }, 400);
+          } else {
+            setTimeout(() => {
+              a.classList.remove('flipped');
+              b.classList.remove('flipped');
+              flippedCards = [];
+            }, 800);
+          }
+        }
+      });
+    });
+  }
+
+  _bindCrosswordGame() {
+    document.getElementById('sr-crossword-check')?.addEventListener('click', () => {
+      let correct = 0;
+      const inputs = document.querySelectorAll('.sr-clue-input');
+      inputs.forEach((input) => {
+        const answer = input.dataset.answer;
+        const userVal = input.value.trim();
+        const result = input.closest('.sr-clue-input-wrap')?.querySelector('.sr-clue-result');
+        if (userVal.toLowerCase() === answer.toLowerCase()) {
+          input.classList.add('correct');
+          input.classList.remove('wrong');
+          if (result) result.textContent = '✅';
+          correct++;
+        } else {
+          input.classList.add('wrong');
+          input.classList.remove('correct');
+          if (result) result.textContent = '❌';
+        }
+      });
+      const scoreEl = document.getElementById('sr-crossword-score');
+      if (scoreEl) scoreEl.textContent = `${correct} / ${inputs.length}`;
+      if (correct === inputs.length && inputs.length) {
+        this._showToast('✏️ Crucigrama perfecto');
+        playerProgressStore.addXP(20);
+      }
+    });
+  }
+
+  _bindFlashcardGame(words) {
+    const gameWords = words;
+    const updateCard = () => {
+      const word = gameWords[this._studyFlashcardIndex];
+      if (!word) return;
+      const wordEl = document.getElementById('sr-flash-word');
+      const transEl = document.getElementById('sr-flash-translation');
+      const exEl = document.getElementById('sr-flash-example');
+      const counterEl = document.getElementById('sr-flash-counter');
+      const card = document.getElementById('sr-flashcard-current');
+      if (wordEl) wordEl.textContent = word.word;
+      if (transEl) transEl.textContent = word.translation;
+      if (exEl) exEl.textContent = word.example || '';
+      if (counterEl) counterEl.textContent = `${this._studyFlashcardIndex + 1} / ${gameWords.length}`;
+      if (card) card.dataset.flipped = 'false';
+      document.querySelectorAll('.sr-flash-dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index === this._studyFlashcardIndex);
+      });
+      const prevBtn = document.getElementById('sr-flash-prev');
+      const nextBtn = document.getElementById('sr-flash-next');
+      if (prevBtn) prevBtn.disabled = this._studyFlashcardIndex === 0;
+      if (nextBtn) nextBtn.disabled = this._studyFlashcardIndex >= gameWords.length - 1;
+    };
+    updateCard();
+
+    document.getElementById('sr-flashcard-current')?.addEventListener('click', () => {
+      const card = document.getElementById('sr-flashcard-current');
+      if (card) card.dataset.flipped = card.dataset.flipped === 'true' ? 'false' : 'true';
+    });
+    document.getElementById('sr-flash-flip')?.addEventListener('click', () => {
+      const card = document.getElementById('sr-flashcard-current');
+      if (card) card.dataset.flipped = card.dataset.flipped === 'true' ? 'false' : 'true';
+    });
+    document.getElementById('sr-flash-prev')?.addEventListener('click', () => {
+      if (this._studyFlashcardIndex > 0) {
+        this._studyFlashcardIndex--;
+        updateCard();
+      }
+    });
+    document.getElementById('sr-flash-next')?.addEventListener('click', () => {
+      if (this._studyFlashcardIndex < gameWords.length - 1) {
+        this._studyFlashcardIndex++;
+        updateCard();
+      }
+    });
+    document.querySelectorAll('.sr-flash-dot').forEach((dot) => {
+      dot.addEventListener('click', () => {
+        this._studyFlashcardIndex = parseInt(dot.dataset.idx) || 0;
+        updateCard();
+      });
+    });
+  }
+
+  async _bindKaraokeGame(words) {
+    document.getElementById('sr-karaoke-regenerate')?.addEventListener('click', async () => {
+      this._studyGeneratedSong = null;
+      await this._generateStudySong(words);
+    });
+
+    document.getElementById('sr-karaoke-play')?.addEventListener('click', () => {
+      const lines = document.querySelectorAll('.sr-lyric-line');
+      let idx = 0;
+      const interval = setInterval(() => {
+        lines.forEach((line) => line.classList.remove('active'));
+        if (idx >= lines.length) {
+          clearInterval(interval);
+          return;
+        }
+        lines[idx].classList.add('active');
+        idx++;
+      }, 2500);
+    });
+  }
+
+  async _generateStudySong(words) {
+    const gameArea = document.getElementById('sr-game-area');
+    if (!gameArea) return;
+
+    try {
+      this._studyGeneratedSong = await generateSong(words, 'Diccionario personal');
+      gameArea.innerHTML = renderKaraokeGame(words, this._studyGeneratedSong);
+      this._bindKaraokeGame(words);
+    } catch (error) {
+      console.error('Study karaoke error:', error);
+      this._showToast('⚠️ No se pudo generar la canción');
+    }
+  }
+
+  _bindQuizGame(words) {
+    const pool = [...words];
+    document.querySelectorAll('.sr-quiz-opt').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const isCorrect = btn.dataset.correct === 'true';
+        btn.classList.add(isCorrect ? 'correct' : 'wrong');
+        const siblings = btn.closest('.sr-quiz-options-grid')?.querySelectorAll('.sr-quiz-opt');
+        siblings?.forEach((item) => {
+          item.style.pointerEvents = 'none';
+          if (item.dataset.correct === 'true') item.classList.add('correct');
+        });
+        playerProgressStore.recordResult(isCorrect ? 'correct' : 'incorrect');
+        setTimeout(() => {
+          const currentIndex = parseInt(btn.dataset.q);
+          const area = document.getElementById('sr-quiz-area');
+          if (!area) return;
+          const questions = this._generateStudyQuizQuestions(pool);
+          if (currentIndex + 1 < questions.length) {
+            area.innerHTML = _renderQuizQuestion(questions, currentIndex + 1);
+            this._bindQuizGame(words);
+          } else {
+            area.innerHTML = '<div class="sr-quiz-complete"><div class="sr-quiz-complete-icon">🎉</div><div class="sr-quiz-complete-text">¡Quiz completado!</div></div>';
+            this._showToast('📝 Test completado');
+            playerProgressStore.addXP(15);
+          }
+        }, 1200);
+      });
+    });
+  }
+
+  _generateStudyQuizQuestions(words) {
+    return words.slice(0, 5).map((word) => {
+      const distractors = words.filter((candidate) => candidate.word !== word.word).slice(0, 3).map((candidate) => candidate.translation);
+      const options = [...distractors, word.translation].sort(() => Math.random() - 0.5);
+      return { prompt: word.word, correct: word.translation, options };
     });
   }
 
@@ -1300,6 +1656,8 @@ export class DictionaryScene extends Phaser.Scene {
 
     // Dictionary Settings
     document.getElementById('dict-settings-btn')?.addEventListener('click', () => this._openSettings());
+    document.getElementById('dict-mode-dictionary')?.addEventListener('click', () => this._setViewMode('dictionary'));
+    document.getElementById('dict-mode-study')?.addEventListener('click', () => this._setViewMode('study'));
 
     // Swap button in form
     document.getElementById('dict-swap-btn')?.addEventListener('click', () => this._swapTranslationsInForm());
@@ -1437,6 +1795,10 @@ export class DictionaryScene extends Phaser.Scene {
             <span class="dict-title-icon">📖</span>
             <span>${i18n.t('dict_title')}</span>
           </div>
+          <div id="dict-header-modes">
+            <button id="dict-mode-dictionary" class="dict-mode-btn ${this._viewMode === 'dictionary' ? 'active' : ''}">📖 Diccionario</button>
+            <button id="dict-mode-study" class="dict-mode-btn ${this._viewMode === 'study' ? 'active' : ''}">📚 Sala de estudios</button>
+          </div>
           <div id="dict-stats">${i18n.t('dict_loading')}</div>
           <div id="dict-header-actions">
             <button id="dict-maint-btn" class="dict-header-btn" title="Opciones de gestor">📂</button>
@@ -1446,7 +1808,7 @@ export class DictionaryScene extends Phaser.Scene {
         </div>
 
         <!-- Form -->
-        <div id="dict-form-section">
+        <div id="dict-form-section" class="${this._viewMode === 'study' ? 'dict-section-hidden' : ''}">
           <div id="dict-form-row">
             <div class="dict-form-group" style="flex: 2; min-width: 100px;">
               <input id="dict-in-word" type="text" placeholder="🇩🇪 Wort (Deutsch)" autocomplete="off" spellcheck="false" />
@@ -1476,7 +1838,7 @@ export class DictionaryScene extends Phaser.Scene {
         </div>
 
         <!-- Toolbar: Search + Sort + Import -->
-        <div id="dict-toolbar">
+        <div id="dict-toolbar" class="${this._viewMode === 'study' ? 'dict-section-hidden' : ''}">
           <div id="dict-search-bar">
             <span class="dict-search-icon">🔍</span>
             <input id="dict-search" type="text" placeholder="${i18n.t('dict_search_ph')}" autocomplete="off" />
@@ -1509,9 +1871,10 @@ export class DictionaryScene extends Phaser.Scene {
         </div>
 
         <!-- Word list (scrollable) -->
-        <div id="dict-list-wrap">
+        <div id="dict-list-wrap" class="${this._viewMode === 'study' ? 'dict-section-hidden' : ''}">
           <div id="dict-list"></div>
         </div>
+        <div id="dict-study-section" class="${this._viewMode === 'study' ? '' : 'dict-section-hidden'}"></div>
       </div>
     `;
   }
@@ -1550,6 +1913,7 @@ export class DictionaryScene extends Phaser.Scene {
         background: #0f172a;
         border-bottom: 1px solid rgba(255,255,255,0.1);
         flex-shrink: 0;
+        flex-wrap: wrap;
       }
 
       #dict-title {
@@ -1563,11 +1927,41 @@ export class DictionaryScene extends Phaser.Scene {
       }
       .dict-title-icon { font-size: 15px; }
 
+      #dict-header-modes {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dict-mode-btn {
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03);
+        color: #94a3b8;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 10px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+      .dict-mode-btn:hover {
+        border-color: rgba(56,189,248,0.45);
+        color: #38bdf8;
+      }
+      .dict-mode-btn.active {
+        background: rgba(56,189,248,0.14);
+        border-color: rgba(56,189,248,0.55);
+        color: #e0f2fe;
+      }
+
       #dict-stats {
         font-size: 11px;
         color: #94a3b8;
         flex: 1;
         font-weight: 500;
+        min-width: 220px;
       }
 
       #dict-header-actions {
@@ -1772,6 +2166,42 @@ export class DictionaryScene extends Phaser.Scene {
         white-space: nowrap;
       }
       .dict-outline-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+
+      .dict-section-hidden { display: none !important; }
+
+      #dict-study-section {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        background: #0f172a;
+      }
+
+      .dict-study-empty {
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 48px 24px;
+        text-align: center;
+        color: #cbd5e1;
+      }
+      .dict-study-empty-icon {
+        font-size: 42px;
+      }
+      .dict-study-empty-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 22px;
+        font-weight: 700;
+        color: #f8fafc;
+      }
+      .dict-study-empty-copy {
+        max-width: 560px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #94a3b8;
+      }
 
       /* Word list */
       #dict-list-wrap {
@@ -2164,12 +2594,16 @@ export class DictionaryScene extends Phaser.Scene {
       @media (max-width: 500px) {
         #dict-header { padding: 8px 12px; gap: 8px; }
         #dict-title { font-size: 14px; }
+        #dict-header-modes { width: 100%; order: 3; }
+        #dict-stats { min-width: 100%; order: 4; }
         #dict-form-section { padding: 10px 12px; }
         #dict-toolbar { padding: 7px 12px; gap: 8px; }
         .dict-sort-btn { font-size: 10px; padding: 4px 8px; }
         .dict-outline-btn { font-size: 11px; padding: 6px 10px; }
         #dict-list { grid-template-columns: 1fr; }
       }
+
+      ${getStudyRoomCSS()}
     `;
   }
 }

@@ -142,15 +142,55 @@ const STRINGS = {
         en: 'Open',
         es: 'Abrir',
     },
+    menu_hotspot_play_badge: {
+        de: 'PLAY',
+        en: 'PLAY',
+        es: 'PLAY',
+    },
+    menu_hotspot_builder_badge: {
+        de: 'SZENEN ERSTELLEN',
+        en: 'CREATE SCENES',
+        es: 'CREAR ESCENAS',
+    },
+    menu_hotspot_dictionary_badge: {
+        de: 'WÖRTERBUCH',
+        en: 'DICTIONARY',
+        es: 'DICCIONARIO',
+    },
+    menu_hotspot_settings_badge: {
+        de: 'SYSTEM',
+        en: 'SYSTEM',
+        es: 'SISTEMA',
+    },
+    menu_shortcut_play: {
+        de: 'PLAY',
+        en: 'PLAY',
+        es: 'PLAY',
+    },
+    menu_shortcut_builder: {
+        de: 'SZENEN',
+        en: 'SCENES',
+        es: 'ESCENAS',
+    },
+    menu_shortcut_dictionary: {
+        de: 'LEXIKON',
+        en: 'DICT.',
+        es: 'DICC.',
+    },
+    menu_shortcut_settings: {
+        de: 'SYSTEM',
+        en: 'SYSTEM',
+        es: 'SISTEMA',
+    },
     menu_endpoint: {
         de: 'Endpoint',
         en: 'Endpoint',
         es: 'Endpoint',
     },
     menu_hotspot_hint: {
-        de: 'Bewege die Maus über Monitor, Disk A oder Buch. Oder drücke P, A, D oder S.',
-        en: 'Hover the monitor, Disk A or the book. Or press P, A, D or S.',
-        es: 'Pasa el ratón por el monitor, el disquete A o el libro. O pulsa P, A, D o S.',
+        de: 'Bewege die Maus über Monitor, Szenen erstellen oder Wörterbuch. Oder drücke P, A, D oder S.',
+        en: 'Hover the monitor, Create Scenes or the dictionary. Or press P, A, D or S.',
+        es: 'Pasa el ratón por el monitor, crear escenas o el diccionario. O pulsa P, A, D o S.',
     },
     menu_hotspot_activate: {
         de: 'ENTER, LEERTASTE, Klick oder dieselbe Taste erneut öffnen den markierten Zugang.',
@@ -168,9 +208,9 @@ const STRINGS = {
         es: 'Abre la historia de ejemplo amable de Roger en el Burgeramt. Esta escena guiada muestra como convertir fotos reales en escenas utiles para aprender idioma.',
     },
     menu_hotspot_builder_title: {
-        de: 'DISK A / SZENEN-BAUER',
-        en: 'DISK A / SCENE BUILDER',
-        es: 'DISQUETE A / CONSTRUCTOR DE ESCENAS',
+        de: 'A / SZENEN ERSTELLEN',
+        en: 'A / CREATE SCENES',
+        es: 'A / CREAR ESCENAS',
     },
     menu_hotspot_builder_desc: {
         de: 'Öffnet das alte Autorensystem zum Importieren von Bildern, Schreiben von Dialogen und Bauen neuer Lernszenen.',
@@ -178,9 +218,9 @@ const STRINGS = {
         es: 'Abre el sistema de autoría retro para importar imágenes, escribir diálogos y construir nuevas escenas de estudio.',
     },
     menu_hotspot_dictionary_title: {
-        de: 'BUCH / WÖRTERBUCH',
-        en: 'BOOK / DICTIONARY',
-        es: 'LIBRO / DICCIONARIO',
+        de: 'D / WÖRTERBUCH',
+        en: 'D / DICTIONARY',
+        es: 'D / DICCIONARIO',
     },
     menu_hotspot_dictionary_desc: {
         de: 'Ruft das Wörterbuch auf, um Vokabeln zu suchen, Lernwörter zu pinnen und deinen eigenen Bestand zu pflegen.',
