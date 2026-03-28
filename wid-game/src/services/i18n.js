@@ -172,14 +172,14 @@ const STRINGS = {
         es: 'ENTER, ESPACIO, clic o la misma tecla otra vez abren el acceso resaltado.',
     },
     menu_hotspot_play_title: {
-        de: 'PLAY / HAUPTGESCHICHTE',
-        en: 'PLAY / MAIN STORY',
-        es: 'PLAY / HISTORIA PRINCIPAL',
+        de: 'PLAY / ROGER-BEISPIEL',
+        en: 'PLAY / ROGER EXAMPLE',
+        es: 'PLAY / ROGER: HISTORIA DE EJEMPLO',
     },
     menu_hotspot_play_desc: {
-        de: 'Startet die Hauptszene und setzt Rogers ersten Tag in Deutschland direkt vom CRT-Monitor aus fort.',
-        en: 'Launches the main scene and continues Roger\'s first day in Germany straight from the CRT monitor.',
-        es: 'Inicia la escena principal y continúa el primer día de Roger en Alemania directamente desde el monitor CRT.',
+        de: 'Offnet Rogers freundliche Beispielgeschichte im Burgeramt. Diese gefuhrte Szene zeigt, wie man aus echten Fotos lernbare Dialogszenen baut.',
+        en: 'Opens Roger\'s friendly Burgeramt example story. This guided scene shows how real photos become useful language-learning scenes.',
+        es: 'Abre la historia de ejemplo amable de Roger en el Burgeramt. Esta escena guiada muestra como convertir fotos reales en escenas utiles para aprender idioma.',
     },
     menu_hotspot_builder_title: {
         de: 'DISK A / SZENEN-BAUER',

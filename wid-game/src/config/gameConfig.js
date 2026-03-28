@@ -16,6 +16,10 @@ export function createGameConfig() {
         width: 800,
         height: 500,
         parent: 'game-container',
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
         pixelArt: true,
         backgroundColor: '#0a0a1a',
         physics: {
