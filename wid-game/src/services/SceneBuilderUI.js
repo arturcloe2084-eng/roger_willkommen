@@ -2,6 +2,20 @@ import { DictionaryManager } from './DictionaryManager.js';
 import { playerProgressStore } from './player/PlayerProgressStore.js';
 import { SCENE_KEYS } from '../config/sceneKeys.js';
 import { narratorService } from './NarratorService.js';
+import { SCRIPT_TEMPLATES, parseScript, validateScript, generateSceneImage, generateSong } from './ScriptEditorService.js';
+import {
+    STUDY_STRATEGIES, tagWordsWithStoryRef,
+    renderStudyRoomHTML, renderMemoryGame, renderCrosswordGame,
+    renderFlashcardGame, renderKaraokeGame, renderQuizGame,
+    getStudyRoomCSS, _renderQuizQuestion
+} from './StudyRoomService.js';
+
+// ── Modos de reproducción de escena ──────────────────────────
+const PLAYBACK_MODES = [
+    { id: 'script', label: 'GUIÓN', icon: '📜', description: 'Sigue el guión paso a paso' },
+    { id: 'choices', label: 'OPCIONES', icon: '🔀', description: 'Elige entre 3 respuestas posibles' },
+    { id: 'voice', label: 'VOZ LIBRE', icon: '🎤', description: 'Conversa libremente con IA' }
+];
 
 const STORAGE_KEY = 'rw_scene_builder_last_scene';
 const CUSTOM_SCENES_KEY = 'rw_scene_builder_custom_scenes';
@@ -12,7 +26,7 @@ export const ROOM_BACKGROUND_URL = 'assets/scene-1-apartamento.png';
 
 const SCENE_CATEGORIES = [
     { id: 'recommended', label: '1. EJEMPLO DE ROGER', subtitle: 'Aprende con la historia guia' },
-    { id: 'custom', label: '2. CREAR ESCENA', subtitle: 'Escribe tu guion y estudia vocabulario' },
+    { id: 'custom', label: '2. CREAR ESCENA', subtitle: 'Editor de guión · Sala de estudio · Examen' },
 ];
 
 const SCENE_FALLBACK_VOCABULARY = [
@@ -344,6 +358,15 @@ export class SceneBuilderUI {
         this.sceneStepIndexByScene = {};
         this.scenePlayStateByScene = {};
         this.builderMessage = 'Escribe un guion simple, anade fotos reales y prepara la sala de estudio antes de abrir la escena. Si quieres avanzar rapido, luego podras usar "Saltar examen".';
+        // Nuevas propiedades
+        this.currentWorkbenchTab = 'script'; // 'script' | 'study' | 'exam'
+        this.currentStudyStrategy = null;
+        this.playbackMode = 'script'; // 'script' | 'choices' | 'voice'
+        this.storyNumber = this._getNextStoryNumber();
+        this.generatedSong = null;
+        this.memoryGameState = null;
+        this.flashcardIndex = 0;
+        this.quizState = null;
     }
 
     async _getDictionaryManager() {
@@ -353,9 +376,14 @@ export class SceneBuilderUI {
         return this.dictionaryManagerPromise;
     }
 
-    open({ hostScene = null, source = 'pc' } = {}) {
+    open({ hostScene = null, source = 'pc', initialTab = null } = {}) {
         this.hostScene = hostScene || this.hostScene;
         this.source = source;
+        if (initialTab) {
+            this.currentWorkbenchTab = initialTab;
+            this.activeCategory = 'custom';
+            this.selectedSceneId = BUILDER_WORKBENCH_ID;
+        }
 
         if (this.overlay) {
             if (!document.body.contains(this.overlay)) {
@@ -659,7 +687,7 @@ export class SceneBuilderUI {
 
         // Obtener el texto en alemán
         const germanText = currentNode.deLine || currentNode.learningGerman || currentNode.text;
-        
+
         // Reproducir la narración sobre la imagen actual (sin cerrar SceneBuilder)
         narratorService.narrateInGerman(germanText, (subtitleText, languageCode) => {
             // Callback: actualizar subtítulos si es necesario
@@ -987,7 +1015,6 @@ export class SceneBuilderUI {
                         onerror="this.onerror=null;this.src='${this._escapeAttr(frame.fallback || scene.roomBackgroundUrl || ROOM_BACKGROUND_URL)}';"
                     />
                     <div class="sb-play-stage-meta">
-                        <div class="sb-play-kicker">JUEGO / APRENDER ALEMAN EN CONTEXTO</div>
                         <div class="sb-play-progress">Escena ${currentIndex + 1} de ${allNodes.length}</div>
                     </div>
                     ${this.activeCategory === 'recommended' ? `
@@ -1018,18 +1045,18 @@ export class SceneBuilderUI {
                         ${focusWords.map((word) => `<span class="sb-chip">${this._escape(word)}</span>`).join('')}
                     </div>
                     <div class="sb-info-block">
-                        <div class="sb-info-title">Aprendizaje</div>
+                        <div class="sb-info-title">Escena ${currentIndex + 1} de ${allNodes.length}</div>
                         <div class="sb-info-line">${this._escape(frame.caption || 'Lee la escena, escucha el contexto y usa las palabras clave para fijar el dialogo.')}</div>
                     </div>
                     ${choiceButtons
-                        ? `<div class="sb-play-choice-list">${choiceButtons}</div>`
-                        : `
+                ? `<div class="sb-play-choice-list">${choiceButtons}</div>`
+                : `
                             <div class="sb-play-controls">
                                 <button class="sb-load-btn" id="sb-play-prev" ${hasPrevious ? '' : 'disabled'}>Anterior</button>
                                 <button class="sb-load-btn" id="sb-play-next" ${hasNext ? '' : 'disabled'}>${hasNext ? 'Siguiente' : 'Final de escena'}</button>
                             </div>
                         `
-                    }
+            }
                     <div class="sb-play-footer">
                         <button id="sb-play-preview" class="sb-load-btn">Ver blueprint</button>
                         <button id="sb-play-create" class="sb-load-btn">Crear mi propia escena</button>
@@ -1220,63 +1247,203 @@ export class SceneBuilderUI {
         this._setLayoutMode('workbench');
 
         const draft = this.studyDraft;
-        const quiz = this.studyQuiz;
-        const quizMarkup = draft ? this._renderStudyRoom(draft, quiz) : `
-            <div class="sb-info-block">
-                <div class="sb-info-title">Sala de estudio</div>
-                <div class="sb-info-line">Aqui apareceran las palabras y frases necesarias para revisar tu historia antes de abrir la escena creada.</div>
-            </div>
-        `;
+        const tab = this.currentWorkbenchTab;
+
+        // ── Tab navigation ──
+        const tabs = [
+            { id: 'script', label: '📜 1. GUIÓN', desc: 'Escribe tu historia' },
+            { id: 'study', label: '📚 2. ESTUDIAR', desc: 'Sala de estudio' },
+            { id: 'exam', label: '🎓 3. EXAMEN', desc: 'Test de admisión' }
+        ];
+        const tabNav = tabs.map(t => `
+            <button class="sb-wb-tab ${tab === t.id ? 'active' : ''} ${t.id === 'study' && !draft ? 'locked' : ''} ${t.id === 'exam' && !draft ? 'locked' : ''}" data-wb-tab="${t.id}">
+                <span class="sb-wb-tab-label">${t.label}</span>
+                <span class="sb-wb-tab-desc">${t.desc}</span>
+            </button>
+        `).join('');
+
+        // ── Tab content ──
+        let tabContent = '';
+        if (tab === 'script') {
+            tabContent = this._renderScriptEditorTab(draft);
+        } else if (tab === 'study') {
+            tabContent = this._renderStudyRoomTab(draft);
+        } else if (tab === 'exam') {
+            tabContent = this._renderExamRoomTab(draft);
+        }
 
         previewEl.innerHTML = `
             <div class="sb-workbench-wrap">
                 <div class="sb-preview-hero sb-workbench-hero" style="background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.86), rgba(20, 20, 0, 0.82)), url('${this._escapeAttr(ROOM_BACKGROUND_URL)}');">
-                    <div class="sb-preview-kicker">WORKBENCH / REAL IMAGES + DIALOGUES</div>
-                    <div class="sb-preview-title">Taller de guiones y desbloqueo por vocabulario</div>
-                    <div class="sb-preview-description">Primero escribes un guion simple. Luego el sistema prepara el vocabulario desde el diccionario actual siempre que puede, detecta palabras nuevas necesarias y te deja elegir entre aprobar el examen o saltarlo para abrir la escena directamente.</div>
+                    <div class="sb-preview-kicker">CREADOR DE HISTORIAS · HISTORIA #${this.storyNumber}</div>
+                    <div class="sb-preview-title">${draft ? this._escape(draft.title) : 'Nueva Historia'}</div>
+                    <div class="sb-preview-description">Escribe un guión, estudia el vocabulario, aprueba el examen y juega tu escena en 3 modos.</div>
+                    <div class="sb-preview-tags">
+                        ${PLAYBACK_MODES.map(m => `<span class="sb-chip">${m.icon} ${m.label}</span>`).join('')}
+                    </div>
                 </div>
 
-                <div class="sb-info-block">
-                    <div class="sb-info-title">Flujo obligatorio</div>
-                    <div class="sb-info-line">1. Escribe un guion simple con narracion y dialogos.</div>
-                    <div class="sb-info-line">2. Pega rutas o URLs de fotos reales para cada escena.</div>
-                    <div class="sb-info-line">3. Prepara la sala de estudio con palabras y frases necesarias.</div>
-                    <div class="sb-info-line">4. Aprueba la prueba o usa "Saltar examen" para abrir la escena creada como juego real.</div>
-                </div>
+                <div class="sb-wb-tabs">${tabNav}</div>
 
-                <div class="sb-builder-grid">
-                    <label class="sb-field">
-                        <span>Titulo de la escena</span>
-                        <input id="sb-draft-title" type="text" value="${this._escapeAttr(draft?.title || 'Escena personalizada: Mi historia')}" />
-                    </label>
-
-                    <label class="sb-field sb-field-full">
-                        <span>Fotos reales (una ruta o URL por linea)</span>
-                        <textarea id="sb-draft-images" rows="3" placeholder="assets/mi-foto-1.jpg&#10;assets/mi-foto-2.jpg">${this._escape((draft?.referenceImages || []).join('\n'))}</textarea>
-                    </label>
-
-                    <label class="sb-field sb-field-full">
-                        <span>Guion simple</span>
-                        <textarea id="sb-draft-script" rows="9" placeholder="Narrador: Llegas a la oficina con una carpeta.&#10;Recepcionista: Guten Morgen. Haben Sie einen Termin?&#10;Narrador: Buscas la ventanilla correcta y pides ayuda.">${this._escape(draft?.scriptRaw || 'Narrador: Llegas a la oficina con una carpeta y una foto impresa del edificio.\nRecepcionista: Guten Morgen. Haben Sie einen Termin?\nNarrador: Ensegnas tu Anmeldung y dices Bitte. Hilfe.\nTecnico: Ich bringe den alten Computer und erklaere den Fehler.\nNarrador: Antes de abrir la nueva escena, estudias el vocabulario necesario.')}</textarea>
-                    </label>
+                <div class="sb-wb-content">
+                    ${tabContent}
                 </div>
 
                 <div class="sb-builder-actions">
-                    <button id="sb-prepare-draft-btn" class="sb-load-btn">Preparar estudio y escena</button>
                     <div class="sb-builder-message">${this._escape(this.builderMessage)}</div>
                 </div>
-
-                ${quizMarkup}
             </div>
         `;
 
         this._bindWorkbenchEvents();
+        this._bindWorkbenchTabEvents();
         previewEl.scrollTop = 0;
+    }
+
+    // ── Tab: Script Editor ─────────────────────────────────────
+    _renderScriptEditorTab(draft) {
+        const templateCards = SCRIPT_TEMPLATES.map(t => `
+            <button class="sb-template-card" data-template="${t.id}">
+                <span class="sb-template-icon">${t.icon}</span>
+                <span class="sb-template-name">${this._escape(t.title)}</span>
+                <span class="sb-template-desc">${this._escape(t.description)}</span>
+            </button>
+        `).join('');
+
+        return `
+            <div class="sb-script-editor">
+                <div class="sb-info-block">
+                    <div class="sb-info-title">📋 Formato de guión</div>
+                    <div class="sb-info-line">Escribe tu historia siguiendo el formato teatral: HISTORIA, ESCENA, PERSONAJES, diálogos y decisiones.</div>
+                    <div class="sb-info-line" style="color: #ffcc00;">Formato: <code>PERSONAJE: Diálogo en alemán</code> · <code>[NARRACIÓN] Texto descriptivo</code> · <code>[DECISIÓN]</code></div>
+                </div>
+
+                <div class="sb-info-block">
+                    <div class="sb-info-title">🎬 Plantillas de guión — elige una para empezar rápido</div>
+                    <div class="sb-templates-grid">${templateCards}</div>
+                </div>
+
+                <div class="sb-builder-grid">
+                    <label class="sb-field">
+                        <span>Título de la historia</span>
+                        <input id="sb-draft-title" type="text" value="${this._escapeAttr(draft?.title || 'Mi Historia')}"/>
+                    </label>
+                    <label class="sb-field">
+                        <span>Historia # / Escena #</span>
+                        <div style="display:flex;gap:8px">
+                            <input id="sb-story-num" type="number" min="1" value="${this.storyNumber}" style="width:60px"/>
+                            <span style="color:#8bd89a;padding:10px 0">/</span>
+                            <input id="sb-scene-num" type="number" min="1" value="1" style="width:60px"/>
+                        </div>
+                    </label>
+                </div>
+
+                <label class="sb-field sb-field-full">
+                    <span>✍️ Guión de la escena</span>
+                    <textarea id="sb-draft-script" rows="14" placeholder="HISTORIA: Título\nESCENA 1: Nombre de la escena\nLUGAR: Descripción del lugar\nPERSONAJES: Nombre1, Nombre2\n---\n[NARRACIÓN] Llegas al lugar...\nPersonaje: Guten Tag! Haben Sie einen Termin?\n[DECISIÓN]\n> Opción A -> ESCENA 2\n> Opción B -> ESCENA 3">${this._escape(draft?.scriptRaw || '')}</textarea>
+                </label>
+
+                <div id="sb-script-validation" class="sb-validation-box"></div>
+
+                <div class="sb-info-block">
+                    <div class="sb-info-title">🖼️ Imágenes de las escenas</div>
+                    <div class="sb-info-line">Puedes pegar rutas de fotos reales o generar descripciones con IA.</div>
+                    <div class="sb-image-options">
+                        <label class="sb-field" style="flex:1">
+                            <span>Fotos reales (una por línea)</span>
+                            <textarea id="sb-draft-images" rows="3" placeholder="assets/mi-foto-1.jpg&#10;https://ejemplo.com/foto.jpg">${this._escape((draft?.referenceImages || []).join('\n'))}</textarea>
+                        </label>
+                        <div class="sb-image-gen-panel">
+                            <button id="sb-gen-images" class="sb-load-btn">🤖 Generar con IA</button>
+                            <div id="sb-gen-image-result" class="sb-gen-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sb-info-block">
+                    <div class="sb-info-title">🎮 Modo de reproducción de la escena</div>
+                    <div class="sb-playback-modes">
+                        ${PLAYBACK_MODES.map(m => `
+                            <button class="sb-playback-mode-btn ${this.playbackMode === m.id ? 'active' : ''}" data-mode="${m.id}">
+                                <span class="sb-pb-icon">${m.icon}</span>
+                                <span class="sb-pb-label">${m.label}</span>
+                                <span class="sb-pb-desc">${m.description}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="sb-builder-actions">
+                    <button id="sb-gen-script-btn" class="sb-load-btn" style="background:rgba(138,43,226,0.2); border-color:#da83ff; color:#da83ff;">🤖 Generar con IA y Diccionario</button>
+                    <button id="sb-prepare-draft-btn" class="sb-load-btn">✅ Preparar estudio y escena</button>
+                    <button id="sb-validate-script-btn" class="sb-load-btn">🔍 Validar guión</button>
+                </div>
+            </div>
+        `;
+    }
+
+    // ── Tab: Study Room ────────────────────────────────────────
+    _renderStudyRoomTab(draft) {
+        if (!draft || !draft.requiredVocabulary?.length) {
+            return `
+                <div class="sb-info-block">
+                    <div class="sb-info-title">📚 Sala de Estudio</div>
+                    <div class="sb-info-line">Primero escribe y prepara tu guión en la pestaña "GUIÓN" para generar el vocabulario de estudio.</div>
+                </div>
+            `;
+        }
+
+        const vocabWords = draft.requiredVocabulary;
+        const storyNum = this.storyNumber;
+        const sceneNum = parseInt(document.getElementById('sb-scene-num')?.value) || 1;
+
+        return renderStudyRoomHTML(vocabWords, draft.title, storyNum, sceneNum, this.currentStudyStrategy);
+    }
+
+    // ── Tab: Exam Room ─────────────────────────────────────────
+    _renderExamRoomTab(draft) {
+        if (!draft) {
+            return `
+                <div class="sb-info-block">
+                    <div class="sb-info-title">🎓 Sala de Examen</div>
+                    <div class="sb-info-line">Prepara primero el guión y estudia el vocabulario antes de presentarte al examen de admisión.</div>
+                </div>
+            `;
+        }
+
+        const quiz = this.studyQuiz;
+        return `
+            <div class="sb-exam-room">
+                <div class="sb-exam-header" style="background: linear-gradient(135deg, rgba(10,0,30,0.85), rgba(0,0,0,0.78)), url('assets/study-room-balcony.jpg'); background-size: cover; background-position: center; padding: 20px; border: 1px solid rgba(138,43,226,0.2);">
+                    <div class="sr-room-kicker">🖥️ EXAMEN ONLINE · ADMISIÓN A LA HISTORIA</div>
+                    <div style="font-size:22px; color:#da83ff; margin-top:8px;">Test de Admisión: ${this._escape(draft.title)}</div>
+                    <div style="font-size:14px; color:#8bd89a; margin-top:4px;">Conectando al servidor de evaluación...</div>
+                    <div class="sb-preview-tags" style="margin-top:8px;">
+                        <span class="sb-chip" style="border-color:rgba(138,43,226,0.3);color:#da83ff;">ONLINE</span>
+                        <span class="sb-chip">${draft.requiredVocabulary.length} PALABRAS</span>
+                        <span class="sb-chip">UMBRAL: ${PASS_THRESHOLD}%</span>
+                    </div>
+                </div>
+                ${this._renderQuizMarkup(quiz)}
+            </div>
+        `;
     }
 
     _bindWorkbenchEvents() {
         document.getElementById('sb-prepare-draft-btn')?.addEventListener('click', async () => {
             await this._prepareDraftFromInputs();
+        });
+
+        document.getElementById('sb-validate-script-btn')?.addEventListener('click', () => {
+            this._validateCurrentScript();
+        });
+
+        document.getElementById('sb-gen-script-btn')?.addEventListener('click', async () => {
+            await this._generateAIScript();
+        });
+
+        document.getElementById('sb-gen-images')?.addEventListener('click', async () => {
+            await this._generateSceneImages();
         });
 
         document.getElementById('sb-start-study-quiz')?.addEventListener('click', () => {
@@ -1296,6 +1463,389 @@ export class SceneBuilderUI {
                 await this._answerStudyQuestion(Number(btn.dataset.studyAnswer));
             });
         });
+
+        // ── Template cards ──
+        document.querySelectorAll('[data-template]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tpl = SCRIPT_TEMPLATES.find(t => t.id === btn.dataset.template);
+                if (tpl) {
+                    const textarea = document.getElementById('sb-draft-script');
+                    const titleInput = document.getElementById('sb-draft-title');
+                    if (textarea) textarea.value = tpl.template;
+                    if (titleInput) titleInput.value = tpl.title;
+                    this._writeConsole([`> Plantilla cargada: ${tpl.title}`, '> Puedes editarla libremente']);
+                }
+            });
+        });
+
+        // ── Playback mode buttons ──
+        document.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.playbackMode = btn.dataset.mode;
+                document.querySelectorAll('.sb-playback-mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this._writeConsole([`> Modo de reproducción: ${this.playbackMode.toUpperCase()}`]);
+            });
+        });
+
+        // ── Story/Scene number ──
+        document.getElementById('sb-story-num')?.addEventListener('change', (e) => {
+            this.storyNumber = parseInt(e.target.value) || 1;
+        });
+    }
+
+    /**
+     * Generar guión usando IA y palabras del diccionario
+     */
+    async _generateAIScript() {
+        const titleEl = document.getElementById('sb-draft-title');
+        const scriptEl = document.getElementById('sb-draft-script');
+        const genBtn = document.getElementById('sb-gen-script-btn');
+
+        if (!titleEl || !scriptEl || !genBtn) return;
+
+        const storyTheme = titleEl.value.trim();
+        if (!storyTheme || storyTheme === 'Mi Historia') {
+            this.builderMessage = '⚠️ Por favor, ponle un título descriptivo a la historia (ej: En la Cafetería).';
+            this._renderWorkbench();
+            return;
+        }
+
+        try {
+            genBtn.disabled = true;
+            genBtn.textContent = '⏳ Generando...';
+            this.builderMessage = '🤖 Consultando al guionista de IA...';
+            this._renderWorkbench();
+
+            const dict = await this._getDictionaryManager();
+            const preferredVocabulary = dict.getWordsForScenePrompt(40); // Top 40 pinned/recent
+
+            const response = await fetch(`${API_CONFIG.PROXY_URL}/generate/scene-script`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    storyTheme,
+                    preferredVocabulary,
+                    gameSecret: API_CONFIG.GAME_SECRET
+                })
+            });
+
+            const data = await response.json();
+            if (data.script) {
+                scriptEl.value = data.script;
+                this.builderMessage = '✅ Guión generado con éxito. Revisa el texto y asegúrate que esté en formato teatral.';
+                this._writeConsole(['> AI script generated successfully', `> Used words from dictionary: ${preferredVocabulary.length}`]);
+            } else {
+                this.builderMessage = '⚠️ No se pudo generar el guión. Intenta de nuevo.';
+            }
+        } catch (error) {
+            console.error('AI Gen Error:', error);
+            this.builderMessage = '⚠️ Error de conexión con el servidor IA.';
+        } finally {
+            genBtn.disabled = false;
+            genBtn.textContent = '🤖 Generar con IA y Diccionario';
+            this._renderWorkbench();
+        }
+    }
+
+    _bindWorkbenchTabEvents() {
+        // ── Tab switches ──
+        document.querySelectorAll('[data-wb-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.wbTab;
+                if (tabId === 'study' && !this.studyDraft) {
+                    this.builderMessage = 'Primero prepara tu guión antes de acceder a la sala de estudio.';
+                    this._renderWorkbench();
+                    return;
+                }
+                if (tabId === 'exam' && !this.studyDraft) {
+                    this.builderMessage = 'Prepara el guión y estudia antes de entrar al examen.';
+                    this._renderWorkbench();
+                    return;
+                }
+                this.currentWorkbenchTab = tabId;
+                this._renderWorkbench();
+            });
+        });
+
+        // ── Study strategies ──
+        document.querySelectorAll('[data-strategy]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.currentStudyStrategy = btn.dataset.strategy;
+                this._loadStudyGame(btn.dataset.strategy);
+            });
+        });
+    }
+
+    async _loadStudyGame(strategyId) {
+        const gameArea = document.getElementById('sr-game-area');
+        if (!gameArea || !this.studyDraft) return;
+
+        const words = this.studyDraft.requiredVocabulary || [];
+        document.querySelectorAll('.sr-strategy-card').forEach(c => c.classList.remove('active'));
+        document.querySelector(`[data-strategy="${strategyId}"]`)?.classList.add('active');
+
+        switch (strategyId) {
+            case 'memory':
+                gameArea.innerHTML = renderMemoryGame(words);
+                this._bindMemoryGame();
+                break;
+            case 'crossword':
+                gameArea.innerHTML = renderCrosswordGame(words);
+                this._bindCrosswordGame();
+                break;
+            case 'flashcard':
+                this.flashcardIndex = 0;
+                gameArea.innerHTML = renderFlashcardGame(words);
+                this._bindFlashcardGame(words);
+                break;
+            case 'karaoke':
+                gameArea.innerHTML = renderKaraokeGame(words, this.generatedSong);
+                this._bindKaraokeGame(words);
+                if (!this.generatedSong) {
+                    this._generateKaraokeSong(words);
+                }
+                break;
+            case 'quiz':
+                gameArea.innerHTML = renderQuizGame(words);
+                this._bindQuizGame(words);
+                break;
+        }
+    }
+
+    _bindMemoryGame() {
+        let flippedCards = [];
+        let matchCount = 0;
+        const totalPairs = parseInt(document.querySelector('.sr-memory-grid')?.dataset.pairs) || 6;
+
+        document.querySelectorAll('.sr-memory-card').forEach(card => {
+            card.addEventListener('click', () => {
+                if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+                if (flippedCards.length >= 2) return;
+
+                card.classList.add('flipped');
+                flippedCards.push(card);
+
+                if (flippedCards.length === 2) {
+                    const [a, b] = flippedCards;
+                    if (a.dataset.pair === b.dataset.pair && a.dataset.type !== b.dataset.type) {
+                        setTimeout(() => {
+                            a.classList.add('matched');
+                            b.classList.add('matched');
+                            matchCount++;
+                            const scoreEl = document.getElementById('sr-memory-score');
+                            if (scoreEl) scoreEl.textContent = `${matchCount} / ${totalPairs}`;
+                            if (matchCount >= totalPairs) {
+                                this._writeConsole(['> 🎉 ¡Juego de memoria completado!']);
+                                playerProgressStore.addXP(15);
+                            }
+                            flippedCards = [];
+                        }, 400);
+                    } else {
+                        setTimeout(() => {
+                            a.classList.remove('flipped');
+                            b.classList.remove('flipped');
+                            flippedCards = [];
+                        }, 800);
+                    }
+                }
+            });
+        });
+    }
+
+    _bindCrosswordGame() {
+        document.getElementById('sr-crossword-check')?.addEventListener('click', () => {
+            let correct = 0;
+            const inputs = document.querySelectorAll('.sr-clue-input');
+            inputs.forEach(input => {
+                const answer = input.dataset.answer;
+                const userVal = input.value.trim();
+                const result = input.closest('.sr-clue-input-wrap')?.querySelector('.sr-clue-result');
+                if (userVal.toLowerCase() === answer.toLowerCase()) {
+                    input.classList.add('correct');
+                    input.classList.remove('wrong');
+                    if (result) result.textContent = '✅';
+                    correct++;
+                } else {
+                    input.classList.add('wrong');
+                    input.classList.remove('correct');
+                    if (result) result.textContent = '❌';
+                }
+            });
+            const scoreEl = document.getElementById('sr-crossword-score');
+            if (scoreEl) scoreEl.textContent = `${correct} / ${inputs.length}`;
+            if (correct === inputs.length) {
+                this._writeConsole(['> ✏️ ¡Crucigrama perfecto!']);
+                playerProgressStore.addXP(20);
+            }
+        });
+    }
+
+    _bindFlashcardGame(words) {
+        const gameWords = words;
+        const updateCard = () => {
+            const word = gameWords[this.flashcardIndex];
+            if (!word) return;
+            const wordEl = document.getElementById('sr-flash-word');
+            const transEl = document.getElementById('sr-flash-translation');
+            const exEl = document.getElementById('sr-flash-example');
+            const counterEl = document.getElementById('sr-flash-counter');
+            const card = document.getElementById('sr-flashcard-current');
+            if (wordEl) wordEl.textContent = word.word;
+            if (transEl) transEl.textContent = word.translation;
+            if (exEl) exEl.textContent = word.example || '';
+            if (counterEl) counterEl.textContent = `${this.flashcardIndex + 1} / ${gameWords.length}`;
+            if (card) card.dataset.flipped = 'false';
+            document.querySelectorAll('.sr-flash-dot').forEach((d, i) => {
+                d.classList.toggle('active', i === this.flashcardIndex);
+            });
+            const prevBtn = document.getElementById('sr-flash-prev');
+            const nextBtn = document.getElementById('sr-flash-next');
+            if (prevBtn) prevBtn.disabled = this.flashcardIndex === 0;
+            if (nextBtn) nextBtn.disabled = this.flashcardIndex >= gameWords.length - 1;
+        };
+        updateCard();
+
+        document.getElementById('sr-flashcard-current')?.addEventListener('click', () => {
+            const card = document.getElementById('sr-flashcard-current');
+            if (card) card.dataset.flipped = card.dataset.flipped === 'true' ? 'false' : 'true';
+        });
+        document.getElementById('sr-flash-flip')?.addEventListener('click', () => {
+            const card = document.getElementById('sr-flashcard-current');
+            if (card) card.dataset.flipped = card.dataset.flipped === 'true' ? 'false' : 'true';
+        });
+        document.getElementById('sr-flash-prev')?.addEventListener('click', () => {
+            if (this.flashcardIndex > 0) { this.flashcardIndex--; updateCard(); }
+        });
+        document.getElementById('sr-flash-next')?.addEventListener('click', () => {
+            if (this.flashcardIndex < gameWords.length - 1) { this.flashcardIndex++; updateCard(); }
+        });
+        document.querySelectorAll('.sr-flash-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                this.flashcardIndex = parseInt(dot.dataset.idx) || 0;
+                updateCard();
+            });
+        });
+    }
+
+    async _bindKaraokeGame(words) {
+        document.getElementById('sr-karaoke-regenerate')?.addEventListener('click', async () => {
+            this.generatedSong = null;
+            await this._generateKaraokeSong(words);
+        });
+
+        document.getElementById('sr-karaoke-play')?.addEventListener('click', () => {
+            // Auto-advance lyrics
+            const lines = document.querySelectorAll('.sr-lyric-line');
+            let idx = 0;
+            const interval = setInterval(() => {
+                lines.forEach(l => l.classList.remove('active'));
+                if (idx >= lines.length) { clearInterval(interval); return; }
+                lines[idx].classList.add('active');
+                idx++;
+            }, 2500);
+        });
+    }
+
+    async _generateKaraokeSong(words) {
+        const stageEl = document.getElementById('sr-karaoke-stage');
+        if (!stageEl) return;
+        const title = this.studyDraft?.title || 'Deutsch lernen';
+        this.generatedSong = await generateSong(words, title);
+        // Re-render karaoke with the new song
+        const gameArea = document.getElementById('sr-game-area');
+        if (gameArea) {
+            gameArea.innerHTML = renderKaraokeGame(words, this.generatedSong);
+            this._bindKaraokeGame(words);
+        }
+    }
+
+    _bindQuizGame(words) {
+        const pool = [...words];
+        document.querySelectorAll('.sr-quiz-opt').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isCorrect = btn.dataset.correct === 'true';
+                btn.classList.add(isCorrect ? 'correct' : 'wrong');
+                const siblings = btn.closest('.sr-quiz-options-grid')?.querySelectorAll('.sr-quiz-opt');
+                siblings?.forEach(s => { s.style.pointerEvents = 'none'; if (s.dataset.correct === 'true') s.classList.add('correct'); });
+                playerProgressStore.recordResult(isCorrect ? 'correct' : 'incorrect');
+                // After short delay, go to next question
+                setTimeout(() => {
+                    const currentIndex = parseInt(btn.dataset.q);
+                    const area = document.getElementById('sr-quiz-area');
+                    if (area) {
+                        const questions = this._generateQuizQuestions(pool);
+                        if (currentIndex + 1 < questions.length) {
+                            area.innerHTML = _renderQuizQuestion(questions, currentIndex + 1);
+                            this._bindQuizGame(words);
+                        } else {
+                            area.innerHTML = '<div class="sr-quiz-complete"><div class="sr-quiz-complete-icon">🎉</div><div class="sr-quiz-complete-text">¡Quiz completado!</div></div>';
+                            playerProgressStore.addXP(15);
+                        }
+                    }
+                }, 1200);
+            });
+        });
+    }
+
+    _generateQuizQuestions(words) {
+        return words.slice(0, 5).map(w => {
+            const distractors = words.filter(c => c.word !== w.word).slice(0, 3).map(c => c.translation);
+            const options = [...distractors, w.translation].sort(() => Math.random() - 0.5);
+            return { prompt: w.word, correct: w.translation, options };
+        });
+    }
+
+    _validateCurrentScript() {
+        const scriptEl = document.getElementById('sb-draft-script');
+        const resultEl = document.getElementById('sb-script-validation');
+        if (!scriptEl || !resultEl) return;
+
+        const result = validateScript(scriptEl.value);
+        const errorsHtml = result.errors.map(e => `<div class="sb-info-line" style="color:#ff7777;">❌ ${this._escape(e)}</div>`).join('');
+        const warnsHtml = result.warnings.map(w => `<div class="sb-info-line" style="color:#ffcc00;">⚠️ ${this._escape(w)}</div>`).join('');
+        const statsHtml = result.stats ? `
+            <div class="sb-preview-tags" style="margin-top:6px;">
+                <span class="sb-chip">${result.stats.totalLines} líneas</span>
+                <span class="sb-chip">${result.stats.dialogueLines} diálogos</span>
+                <span class="sb-chip">${result.stats.narrationLines} narraciones</span>
+                <span class="sb-chip">${result.stats.germanLines} en alemán</span>
+            </div>
+        ` : '';
+
+        resultEl.innerHTML = `
+            <div class="sb-info-block ${result.valid ? 'sb-success-block' : 'sb-warning-block'}">
+                <div class="sb-info-title">${result.valid ? '✅ Guión válido' : '⚠️ Guión con observaciones'}</div>
+                ${errorsHtml}${warnsHtml}${statsHtml}
+            </div>
+        `;
+    }
+
+    async _generateSceneImages() {
+        const resultEl = document.getElementById('sb-gen-image-result');
+        const titleEl = document.getElementById('sb-draft-title');
+        const scriptEl = document.getElementById('sb-draft-script');
+        if (!resultEl) return;
+
+        resultEl.innerHTML = '<div style="color:#8bd89a;">🔄 Generando descripción de imagen con IA...</div>';
+        const title = titleEl?.value || 'Escena';
+        const script = scriptEl?.value?.slice(0, 300) || '';
+
+        const result = await generateSceneImage(script, title);
+        if (result.success || result.suggestion) {
+            resultEl.innerHTML = `
+                <div class="sb-info-block">
+                    <div class="sb-info-title">🤖 Sugerencia de la IA</div>
+                    <div class="sb-info-line">${this._escape(result.suggestion || result.description || 'Sin sugerencia')}</div>
+                </div>
+            `;
+        } else {
+            resultEl.innerHTML = `<div style="color:#ff7777;">Error: ${this._escape(result.error || 'No disponible')}</div>`;
+        }
+    }
+
+    _getNextStoryNumber() {
+        return (this.customScenes || []).length + 1;
     }
 
     async _prepareDraftFromInputs() {
@@ -1320,7 +1870,8 @@ export class SceneBuilderUI {
 
         this.studyDraft = draft;
         this.studyQuiz = this._createStudyQuiz(draft.requiredVocabulary);
-        this.builderMessage = `Se preparo la sala de estudio: ${draft.requiredVocabulary.length} palabras/frases y ${draft.nodes.length} nodos.`;
+        this.builderMessage = `Se preparo la sala de estudio: ${draft.requiredVocabulary.length} palabras/frases y ${draft.nodes.length} nodos. Pasa a ESTUDIAR para practicar vocabulario.`;
+        this.currentWorkbenchTab = 'study';
         this._renderWorkbench();
         this._writeConsole([
             `> Draft preparado: ${draft.sceneId}`,
@@ -1710,8 +2261,8 @@ export class SceneBuilderUI {
                     <div class="sb-info-line">Puntuacion: ${quiz.score}/${quiz.questions.length} (${Math.round((quiz.score / quiz.questions.length) * 100)}%)</div>
                     <div class="sb-info-line">${this._escape(quiz.lastFeedback || '')}</div>
                     ${quiz.passed
-                        ? '<div class="sb-info-line">La escena ya esta desbloqueada en PERSONALIZADAS y el diccionario ha sido actualizado.</div>'
-                        : '<div class="sb-builder-actions"><button id="sb-retry-study-quiz" class="sb-load-btn">Reintentar examen</button><button id="sb-skip-study-quiz" class="sb-load-btn">Saltar examen y abrir</button></div>'}
+                    ? '<div class="sb-info-line">La escena ya esta desbloqueada en PERSONALIZADAS y el diccionario ha sido actualizado.</div>'
+                    : '<div class="sb-builder-actions"><button id="sb-retry-study-quiz" class="sb-load-btn">Reintentar examen</button><button id="sb-skip-study-quiz" class="sb-load-btn">Saltar examen y abrir</button></div>'}
                 </div>
             `;
         }
@@ -1837,16 +2388,23 @@ export class SceneBuilderUI {
             `scene_builder:${this.studyDraft.sceneId}`
         );
 
+        // Tag vocabulary with scene reference
+        const sceneNum = document.getElementById('sb-scene-num')?.value || '1';
+        const sceneRef = `H${this.storyNumber}/E${sceneNum}`;
+        const allSceneWords = this.studyDraft.requiredVocabulary.map(v => v.word);
+        const taggedCount = dict.tagWordsWithScene(allSceneWords, sceneRef);
+
         const unlockedScene = {
             ...this.studyDraft,
             unlockedAt: Date.now(),
-            importedVocabulary: importResult
+            importedVocabulary: importResult,
+            sceneRef // Guardar ref en la escena también
         };
 
         this._upsertCustomScene(unlockedScene);
         this.builderMessage = skippedExam
-            ? `Escena desbloqueada sin examen. Palabras nuevas agregadas: ${importResult.added}.`
-            : `Escena desbloqueada. Palabras nuevas agregadas: ${importResult.added}. Puedes revisarla ya en PERSONALIZADAS.`;
+            ? `Escena desbloqueada. Agregadas: ${importResult.added}. Etiquetadas: ${taggedCount}.`
+            : `Escena desbloqueada. Agregadas: ${importResult.added}. Etiquetadas: ${taggedCount}. Revisa PERSONALIZADAS.`;
         this.studyQuiz = {
             ...this.studyQuiz,
             completed: true,
@@ -1999,12 +2557,12 @@ export class SceneBuilderUI {
                 <div class="sb-info-title">Fotos reales / referencias visuales</div>
                 <div class="sb-image-grid">
                     ${images.map((image, index) => {
-                        const source = typeof image === 'string' ? image : image.image;
-                        const fallback = typeof image === 'string' ? ROOM_BACKGROUND_URL : (image.fallback || ROOM_BACKGROUND_URL);
-                        const caption = typeof image === 'string'
-                            ? `Imagen ${index + 1}: ${image}`
-                            : (image.title || `Imagen ${index + 1}`);
-                        return `
+            const source = typeof image === 'string' ? image : image.image;
+            const fallback = typeof image === 'string' ? ROOM_BACKGROUND_URL : (image.fallback || ROOM_BACKGROUND_URL);
+            const caption = typeof image === 'string'
+                ? `Imagen ${index + 1}: ${image}`
+                : (image.title || `Imagen ${index + 1}`);
+            return `
                         <div class="sb-image-card">
                             <img
                                 class="sb-image-thumb-img"
@@ -2015,7 +2573,7 @@ export class SceneBuilderUI {
                             <div class="sb-image-caption">${this._escape(caption)}</div>
                         </div>
                     `;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>
         `;
@@ -2843,6 +3401,144 @@ export class SceneBuilderUI {
                 flex-direction: column;
                 gap: 12px;
             }
+            /* ── Workbench Tabs ── */
+            .sb-wb-tabs {
+                display: flex;
+                gap: 4px;
+                border-bottom: 2px solid rgba(0, 255, 65, 0.16);
+                margin-bottom: 4px;
+            }
+            .sb-wb-tab {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                flex: 1;
+                padding: 10px 12px;
+                border: 1px solid rgba(0, 255, 65, 0.12);
+                border-bottom: none;
+                background: rgba(0, 0, 0, 0.52);
+                color: #5c805f;
+                cursor: pointer;
+                font: inherit;
+                text-align: center;
+                transition: all 0.15s;
+            }
+            .sb-wb-tab.active {
+                color: var(--sb-green);
+                background: rgba(0, 40, 10, 0.5);
+                border-color: rgba(0, 255, 65, 0.3);
+                box-shadow: inset 0 -2px 0 var(--sb-green);
+            }
+            .sb-wb-tab:hover:not(.locked) {
+                color: var(--sb-cyan);
+                border-color: rgba(0, 215, 255, 0.2);
+            }
+            .sb-wb-tab.locked {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
+            .sb-wb-tab-label { font-size: 16px; }
+            .sb-wb-tab-desc { font-size: 12px; color: #7ea286; }
+            .sb-wb-tab.active .sb-wb-tab-desc { color: #8bd89a; }
+            .sb-wb-content { display: flex; flex-direction: column; gap: 12px; }
+
+            /* ── Template Cards ── */
+            .sb-templates-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 8px;
+            }
+            .sb-template-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                padding: 10px 8px;
+                border: 1px solid rgba(0, 255, 65, 0.14);
+                background: rgba(0, 0, 0, 0.5);
+                color: #00ff41;
+                cursor: pointer;
+                font: inherit;
+                text-align: center;
+                transition: all 0.15s;
+            }
+            .sb-template-card:hover {
+                border-color: var(--sb-amber);
+                color: var(--sb-amber);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 16px rgba(255, 204, 0, 0.08);
+            }
+            .sb-template-icon { font-size: 28px; }
+            .sb-template-name { font-size: 15px; color: var(--sb-amber); }
+            .sb-template-desc { font-size: 12px; color: #7ea286; }
+
+            /* ── Playback Mode Selector ── */
+            .sb-playback-modes {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .sb-playback-mode-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                padding: 12px 8px;
+                border: 1px solid rgba(0, 255, 65, 0.16);
+                background: rgba(0, 0, 0, 0.52);
+                color: #00ff41;
+                cursor: pointer;
+                font: inherit;
+                text-align: center;
+                transition: all 0.2s;
+            }
+            .sb-playback-mode-btn.active {
+                border-color: var(--sb-cyan);
+                background: rgba(0, 40, 50, 0.35);
+                box-shadow: 0 0 16px rgba(0, 215, 255, 0.12);
+            }
+            .sb-playback-mode-btn:hover {
+                border-color: var(--sb-cyan);
+                color: var(--sb-cyan);
+            }
+            .sb-pb-icon { font-size: 28px; }
+            .sb-pb-label { font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+            .sb-pb-desc { font-size: 12px; color: #7ea286; }
+            .sb-playback-mode-btn.active .sb-pb-label { color: var(--sb-cyan); }
+
+            /* ── Image Gen Panel ── */
+            .sb-image-options {
+                display: flex;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            .sb-image-gen-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 180px;
+            }
+            .sb-gen-result { font-size: 13px; }
+
+            /* ── Validation Box ── */
+            .sb-validation-box { margin-top: 2px; }
+
+            /* ── Script Editor ── */
+            .sb-script-editor { display: flex; flex-direction: column; gap: 12px; }
+            .sb-script-editor code {
+                background: rgba(0,255,65,0.06);
+                padding: 2px 6px;
+                border: 1px solid rgba(0,255,65,0.12);
+                font-size: 13px;
+            }
+
+            /* ── Exam Room ── */
+            .sb-exam-room { display: flex; flex-direction: column; gap: 12px; }
+            .sb-exam-header { border-radius: 2px; }
+
+            /* ── Study Room injected styles ── */
+            ${getStudyRoomCSS()}
             .sb-builder-grid {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));

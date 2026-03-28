@@ -58,6 +58,11 @@ export class BootScene extends Phaser.Scene {
             percentText.destroy();
         });
 
+        // ═══ CARGAR IMAGEN/VIDEO DE FONDO DE MENÚ ═══
+        this.load.image('bg_main_menu_new', 'menu/mesa menu sin marca.png');
+        this.load.video('bg_intro_video', 'menu/mesa4.mp4', 'loadeddata', false, true);
+        this.load.video('bg_menu_video', 'assets/menu.mp4', 'loadeddata', false, true); // Keep as fallback/background if still used
+
         // ═══ CARGAR JSON DE DATOS ═══
         // scenesData se usa para descubrir y cargar dinámicamente todos los fondos.
         this.load.json('vocabularyData', 'data/vocabulary.json');

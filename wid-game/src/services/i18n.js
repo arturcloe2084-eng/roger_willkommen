@@ -99,6 +99,20 @@ const STRINGS = {
         uk: 'КОНСТРУКТОР СЦЕН',
         ru: 'КОНСТРУКТОР СЦЕН',
     },
+    menu_study: {
+        de: '💾 LERNZIMMER',
+        en: '💾 STUDY ROOM',
+        es: '💾 SALA DE ESTUDIO',
+        fr: '💾 SALLE D\'ÉTUDE',
+        pt: '💾 SALA DE ESTUDO',
+        it: '💾 SALA DI STUDIO',
+        cs: '💾 STUDOVNA',
+        pl: '💾 POKÓJ NAUKI',
+        tr: '💾 ÇALIŞMA ODASI',
+        ar: '💾 غرفة الدراسة',
+        uk: '💾 КІМНАТА ДЛЯ НАВЧАННЯ',
+        ru: '💾 КОМНАТА ДЛЯ УЧЕБЫ',
+    },
     menu_settings: {
         de: '⚙️ EINSTELLUNGEN',
         en: '⚙️ SETTINGS',
@@ -126,6 +140,76 @@ const STRINGS = {
         ar: '"لديك 30 يومًا، شقة فارغة وصفر ألمانية. حظًا سعيدًا."',
         uk: '"У тебе 30 днів, порожня квартира і нуль німецької. Успіхів."',
         ru: '"У тебя 30 дней, пустая квартира и ноль немецкого. Удачи."',
+    },
+    menu_controls_title: {
+        de: 'KURZBEFEHLE',
+        en: 'SHORTCUTS',
+        es: 'ATAJOS',
+    },
+    menu_focus: {
+        de: 'Fokus',
+        en: 'Focus',
+        es: 'Foco',
+    },
+    menu_open: {
+        de: 'Öffnen',
+        en: 'Open',
+        es: 'Abrir',
+    },
+    menu_endpoint: {
+        de: 'Endpoint',
+        en: 'Endpoint',
+        es: 'Endpoint',
+    },
+    menu_hotspot_hint: {
+        de: 'Bewege die Maus über Monitor, Disk A oder Buch. Oder drücke P, A, D oder S.',
+        en: 'Hover the monitor, Disk A or the book. Or press P, A, D or S.',
+        es: 'Pasa el ratón por el monitor, el disquete A o el libro. O pulsa P, A, D o S.',
+    },
+    menu_hotspot_activate: {
+        de: 'ENTER, LEERTASTE, Klick oder dieselbe Taste erneut öffnen den markierten Zugang.',
+        en: 'ENTER, SPACE, click or press the same key again to open the highlighted access point.',
+        es: 'ENTER, ESPACIO, clic o la misma tecla otra vez abren el acceso resaltado.',
+    },
+    menu_hotspot_play_title: {
+        de: 'PLAY / HAUPTGESCHICHTE',
+        en: 'PLAY / MAIN STORY',
+        es: 'PLAY / HISTORIA PRINCIPAL',
+    },
+    menu_hotspot_play_desc: {
+        de: 'Startet die Hauptszene und setzt Rogers ersten Tag in Deutschland direkt vom CRT-Monitor aus fort.',
+        en: 'Launches the main scene and continues Roger\'s first day in Germany straight from the CRT monitor.',
+        es: 'Inicia la escena principal y continúa el primer día de Roger en Alemania directamente desde el monitor CRT.',
+    },
+    menu_hotspot_builder_title: {
+        de: 'DISK A / SZENEN-BAUER',
+        en: 'DISK A / SCENE BUILDER',
+        es: 'DISQUETE A / CONSTRUCTOR DE ESCENAS',
+    },
+    menu_hotspot_builder_desc: {
+        de: 'Öffnet das alte Autorensystem zum Importieren von Bildern, Schreiben von Dialogen und Bauen neuer Lernszenen.',
+        en: 'Opens the old authoring system to import images, write dialogue and build new study scenes.',
+        es: 'Abre el sistema de autoría retro para importar imágenes, escribir diálogos y construir nuevas escenas de estudio.',
+    },
+    menu_hotspot_dictionary_title: {
+        de: 'BUCH / WÖRTERBUCH',
+        en: 'BOOK / DICTIONARY',
+        es: 'LIBRO / DICCIONARIO',
+    },
+    menu_hotspot_dictionary_desc: {
+        de: 'Ruft das Wörterbuch auf, um Vokabeln zu suchen, Lernwörter zu pinnen und deinen eigenen Bestand zu pflegen.',
+        en: 'Opens the dictionary to search vocabulary, pin study words and maintain your personal collection.',
+        es: 'Abre el diccionario para buscar vocabulario, fijar palabras de estudio y mantener tu propia colección.',
+    },
+    menu_hotspot_settings_title: {
+        de: 'SYSTEM / EINSTELLUNGEN',
+        en: 'SYSTEM / SETTINGS',
+        es: 'SISTEMA / CONFIGURACIÓN',
+    },
+    menu_hotspot_settings_desc: {
+        de: 'Passt Menüs, Übersetzungssprachen und Anzeigevorschau an, ohne den Retro-Schreibtisch zu verlassen.',
+        en: 'Adjusts menus, translation languages and the live preview without leaving the retro desk.',
+        es: 'Ajusta menús, idiomas de traducción y la vista previa sin salir del escritorio retro.',
     },
     words_learned: {
         de: 'Wörter gelernt',

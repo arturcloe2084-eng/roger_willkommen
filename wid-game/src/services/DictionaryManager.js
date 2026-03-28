@@ -23,11 +23,13 @@ export class DictionaryManager {
       ...w,
       isCustom: false,
       pinned: false,
+      sceneRef: w.sceneRef || '',   // ej: 'H2/E3' = Historia 2, Escena 3
       addedAt: w.addedAt || Date.now()
     }));
     this.customWords = [];
     this.pinnedSet = new Set();      // Set of word strings that are pinned
     this.loadFromLocalStorage();
+    this._loadBaseWordsSceneRefs(); // Load scene refs for base words
   }
 
   static async getInstance() {
@@ -117,7 +119,8 @@ export class DictionaryManager {
     const all = [...this.baseWords, ...this.customWords];
     return all.map(w => ({
       ...w,
-      pinned: this.pinnedSet.has(w.word)
+      pinned: this.pinnedSet.has(w.word),
+      sceneRef: w.sceneRef || ''
     }));
   }
 
@@ -157,8 +160,9 @@ export class DictionaryManager {
 
   /**
    * Agregar nueva palabra personalizada
+   * @param {string} sceneRef - Referencia de escena, ej: 'H2/E3'
    */
-  addWord(word, translation, category = 'general', example = '', translation1 = '', translation2 = '') {
+  addWord(word, translation, category = 'general', example = '', translation1 = '', translation2 = '', sceneRef = '') {
     // Verificar si ya existe
     const exists = this.getAll().find(
       w => w.word.toLowerCase() === word.toLowerCase()
@@ -176,6 +180,7 @@ export class DictionaryManager {
       translation2: translation2 || '',
       category: category || 'general',
       example: example || '',
+      sceneRef: sceneRef || '',
       addedAt: Date.now(),
       isCustom: true
     });
@@ -187,7 +192,7 @@ export class DictionaryManager {
   /**
    * Actualizar cualquier palabra (base o custom) buscando por nombre original
    */
-  updateWord(originalWord, newWord, newTranslation, newCategory, newExample, newT1, newT2) {
+  updateWord(originalWord, newWord, newTranslation, newCategory, newExample, newT1, newT2, newSceneRef) {
     // Buscar en custom
     const customIdx = this.customWords.findIndex(w => w.word === originalWord);
     if (customIdx >= 0) {
@@ -198,7 +203,8 @@ export class DictionaryManager {
         translation1: newT1 !== undefined ? newT1 : (this.customWords[customIdx].translation1 || ''),
         translation2: newT2 !== undefined ? newT2 : (this.customWords[customIdx].translation2 || ''),
         category: newCategory || 'general',
-        example: newExample || ''
+        example: newExample || '',
+        sceneRef: newSceneRef !== undefined ? newSceneRef : (this.customWords[customIdx].sceneRef || '')
       };
       // Actualizar pin si cambió el nombre
       if (originalWord !== newWord && this.pinnedSet.has(originalWord)) {
@@ -220,13 +226,15 @@ export class DictionaryManager {
         translation1: newT1 !== undefined ? newT1 : (this.baseWords[baseIdx].translation1 || ''),
         translation2: newT2 !== undefined ? newT2 : (this.baseWords[baseIdx].translation2 || ''),
         category: newCategory || 'general',
-        example: newExample || ''
+        example: newExample || '',
+        sceneRef: newSceneRef !== undefined ? newSceneRef : (this.baseWords[baseIdx].sceneRef || '')
       };
       if (originalWord !== newWord && this.pinnedSet.has(originalWord)) {
         this.pinnedSet.delete(originalWord);
         this.pinnedSet.add(newWord);
         this.savePinnedToLocalStorage();
       }
+      this._saveBaseWordsSceneRefs();
       return true;
     }
 
@@ -250,6 +258,7 @@ export class DictionaryManager {
       const t2Raw = String(item.translation2 || '').trim();
       const incomingCategory = String(item.category || '').trim();
       const incomingExample = String(item.example || '').trim();
+      const incomingSceneRef = String(item.sceneRef || '').trim(); // Added sceneRef
 
       const mainLc = mainTranslation.toLowerCase();
       const t1Lc = t1Raw.toLowerCase();
@@ -275,6 +284,7 @@ export class DictionaryManager {
       const existingExample = String(existing.example || '').trim();
       const existingT1 = String(existing.translation1 || '').trim();
       const existingT2 = String(existing.translation2 || '').trim();
+      const existingSceneRef = String(existing.sceneRef || '').trim(); // Existing sceneRef
 
       const mergedTranslation = existingTranslation || mainTranslation;
       const mergedCategory = existingCategory || incomingCategory || 'importado';
@@ -283,13 +293,15 @@ export class DictionaryManager {
         : existingExample;
       const mergedT1 = existingT1 || safeT1;
       const mergedT2 = existingT2 || safeT2;
+      const mergedSceneRef = existingSceneRef || incomingSceneRef; // Merge sceneRef
 
       const changed =
         mergedTranslation !== existingTranslation ||
         mergedCategory !== existingCategory ||
         mergedExample !== existingExample ||
         mergedT1 !== existingT1 ||
-        mergedT2 !== existingT2;
+        mergedT2 !== existingT2 ||
+        mergedSceneRef !== existingSceneRef; // Check sceneRef for changes
 
       if (!changed) return;
 
@@ -299,7 +311,8 @@ export class DictionaryManager {
         translation1: mergedT1,
         translation2: mergedT2,
         category: mergedCategory,
-        example: mergedExample
+        example: mergedExample,
+        sceneRef: mergedSceneRef // Update sceneRef
       };
 
       if (targetList === this.customWords) customChanged = true;
@@ -370,14 +383,146 @@ export class DictionaryManager {
   }
 
   /**
-   * Buscar palabras por término
+   * Buscar palabras por término (incluye búsqueda por sceneRef)
    */
   search(term) {
     const lower = term.toLowerCase();
     return this.getAll().filter(w =>
       w.word.toLowerCase().includes(lower) ||
       w.translation.toLowerCase().includes(lower) ||
-      (w.example && w.example.toLowerCase().includes(lower))
+      (w.example && w.example.toLowerCase().includes(lower)) ||
+      (w.sceneRef && w.sceneRef.toLowerCase().includes(lower))
+    );
+  }
+
+  /**
+   * Obtener palabras por referencia de escena
+   * @param {string} sceneRef - formato 'H2/E3' o 'H2'
+   */
+  getByScene(sceneRef) {
+    if (!sceneRef) return [];
+    const lower = sceneRef.toLowerCase();
+    return this.getAll().filter(w =>
+      w.sceneRef && w.sceneRef.toLowerCase().startsWith(lower)
+    );
+  }
+
+  /**
+   * Obtener índice de escenas con conteo de palabras
+   * Retorna: [ { ref: 'H1/E1', label: 'Historia 1 · Escena 1', count: 8 }, ... ]
+   */
+  getSceneIndex() {
+    const map = {};
+    for (const w of this.getAll()) {
+      if (!w.sceneRef) continue;
+      const refs = w.sceneRef.split(',').map(r => r.trim()).filter(Boolean);
+      for (const ref of refs) {
+        if (!map[ref]) {
+          const parts = ref.match(/H(\d+)\/E(\d+)/i);
+          const label = parts
+            ? `Historia ${parts[1]} · Escena ${parts[2]}`
+            : ref;
+          map[ref] = { ref, label, count: 0, words: [] };
+        }
+        map[ref].count++;
+        map[ref].words.push(w.word);
+      }
+    }
+    return Object.values(map).sort((a, b) => a.ref.localeCompare(b.ref));
+  }
+
+  /**
+   * Etiquetar palabras existentes con una referencia de escena
+   * @param {string[]} wordList - Lista de palabras a etiquetar
+   * @param {string} sceneRef - Referencia de escena, ej: 'H2/E3'
+   */
+  tagWordsWithScene(wordList, sceneRef) {
+    if (!sceneRef || !wordList?.length) return 0;
+    let tagged = 0;
+
+    for (const word of wordList) {
+      const lower = word.toLowerCase();
+
+      // Buscar en customWords
+      const custom = this.customWords.find(w => w.word.toLowerCase() === lower);
+      if (custom) {
+        // Añadir ref sin duplicar
+        if (!custom.sceneRef) {
+          custom.sceneRef = sceneRef;
+          tagged++;
+        } else if (!custom.sceneRef.split(',').map(r => r.trim()).includes(sceneRef)) {
+          custom.sceneRef += `, ${sceneRef}`;
+          tagged++;
+        }
+        continue;
+      }
+
+      // Buscar en baseWords
+      const base = this.baseWords.find(w => w.word.toLowerCase() === lower);
+      if (base) {
+        if (!base.sceneRef) {
+          base.sceneRef = sceneRef;
+          tagged++;
+        } else if (!base.sceneRef.split(',').map(r => r.trim()).includes(sceneRef)) {
+          base.sceneRef += `, ${sceneRef}`;
+          tagged++;
+        }
+      }
+    }
+
+    if (tagged > 0) {
+      this.saveToLocalStorage(); // Custom words are saved here
+      this._saveBaseWordsSceneRefs(); // Base words scene refs are saved separately
+    }
+    return tagged;
+  }
+
+  /**
+   * Guardar las referencias de escena de baseWords en localStorage
+   * (los baseWords originales no se modifican en disco, solo en runtime + localStorage)
+   */
+  _saveBaseWordsSceneRefs() {
+    try {
+      const refs = {};
+      for (const w of this.baseWords) {
+        if (w.sceneRef) refs[w.word] = w.sceneRef;
+      }
+      localStorage.setItem('dictionaryBaseSceneRefs', JSON.stringify(refs));
+    } catch (err) {
+      console.error('Error saving base scene refs:', err);
+    }
+  }
+
+  /**
+   * Cargar las referencias de escena de baseWords desde localStorage
+   */
+  _loadBaseWordsSceneRefs() {
+    try {
+      const stored = localStorage.getItem('dictionaryBaseSceneRefs');
+      if (!stored) return;
+      const refs = JSON.parse(stored);
+      for (const w of this.baseWords) {
+        if (refs[w.word]) w.sceneRef = refs[w.word];
+      }
+    } catch (err) {
+      console.error('Error loading base scene refs:', err);
+    }
+  }
+
+  /**
+   * Obtener lista de palabras formateada para prompt de LLM
+   * Prioriza las últimas 60 palabras del diccionario para generar escenas
+   */
+  getWordsForScenePrompt(maxWords = 60) {
+    const all = this.getAll();
+    // Ordenar: primero pinneadas, luego por fecha de adición (más recientes primero)
+    const sorted = [...all].sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (b.addedAt || 0) - (a.addedAt || 0);
+    });
+    return sorted.slice(0, maxWords).map(w =>
+      `${w.word} = ${w.translation}${w.sceneRef ? ` [${w.sceneRef}]` : ''}`
     );
   }
 
@@ -428,6 +573,7 @@ export class DictionaryManager {
         const incomingWord = item.word.trim();
         const incomingCategory = (item.category || 'importado').trim();
         const incomingExample = (item.example || '').trim();
+        const incomingSceneRef = (item.sceneRef || '').trim();
 
         if (this.addWord(
           incomingWord,
@@ -435,7 +581,8 @@ export class DictionaryManager {
           incomingCategory,
           incomingExample,
           safeT1,
-          safeT2
+          safeT2,
+          incomingSceneRef
         )) {
           added++;
         } else {
@@ -449,26 +596,29 @@ export class DictionaryManager {
             return;
           }
 
-          const mergedTranslation = String(existing.translation || '').trim() || mainTranslation;
+          const existingTranslation = String(existing.translation || '').trim();
           const existingCategory = String(existing.category || '').trim();
-          const mergedCategory = existingCategory || incomingCategory || 'importado';
-
           const existingExample = String(existing.example || '').trim();
+          const existingT1 = String(existing.translation1 || '').trim();
+          const existingT2 = String(existing.translation2 || '').trim();
+          const existingSceneRef = String(existing.sceneRef || '').trim();
+
+          const mergedTranslation = existingTranslation || mainTranslation;
+          const mergedCategory = existingCategory || incomingCategory || 'importado';
           const mergedExample = (!existingExample || DictionaryManager.isPlaceholderExample(existingExample, incomingWord))
             ? incomingExample
             : existingExample;
-
-          const existingT1 = String(existing.translation1 || '').trim();
-          const existingT2 = String(existing.translation2 || '').trim();
           const mergedT1 = existingT1 || safeT1;
           const mergedT2 = existingT2 || safeT2;
+          const mergedSceneRef = existingSceneRef || incomingSceneRef;
 
           const changed =
-            mergedTranslation !== String(existing.translation || '').trim() ||
+            mergedTranslation !== existingTranslation ||
             mergedCategory !== existingCategory ||
             mergedExample !== existingExample ||
             mergedT1 !== existingT1 ||
-            mergedT2 !== existingT2;
+            mergedT2 !== existingT2 ||
+            mergedSceneRef !== existingSceneRef;
 
           if (changed) {
             const okUpdate = this.updateWord(
@@ -478,7 +628,8 @@ export class DictionaryManager {
               mergedCategory,
               mergedExample,
               mergedT1,
-              mergedT2
+              mergedT2,
+              mergedSceneRef
             );
             if (okUpdate) {
               updated++;
@@ -696,5 +847,23 @@ export class DictionaryManager {
   clearCustomWords() {
     this.customWords = [];
     this.saveToLocalStorage();
+  }
+
+  /**
+   * Migración de traducciones antiguas (español único) a la nueva estructura dual.
+   * Mueve el campo 'translation' a 'translation2' si los campos nuevos están vacíos.
+   */
+  migrateLegacyTranslations() {
+    let changed = 0;
+    this.customWords.forEach(w => {
+      if (w.translation && !w.translation1 && !w.translation2) {
+        w.translation2 = w.translation;
+        w.translation = '';
+        w.translation1 = '';
+        changed++;
+      }
+    });
+    if (changed > 0) this.saveToLocalStorage();
+    return changed;
   }
 }

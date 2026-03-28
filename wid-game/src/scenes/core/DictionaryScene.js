@@ -24,6 +24,7 @@ export class DictionaryScene extends Phaser.Scene {
     this._mediaRecorder = null;
     this._audioChunks = [];
     this._recordings = {};        // { word: blobURL }
+    this._sceneFilter = 'all';    // 'all' or specific scene ref like 'H1/E1'
   }
 
   init(data) {
@@ -78,9 +79,11 @@ export class DictionaryScene extends Phaser.Scene {
     container.appendChild(el);
     this._overlay = el;
 
-    if (!document.getElementById('dict-styles-v2')) {
+    const existingStyle = document.getElementById('dict-styles-v8');
+    if (existingStyle) existingStyle.remove();
+    if (!document.getElementById('dict-styles-v8')) {
       const style = document.createElement('style');
-      style.id = 'dict-styles-v2';
+      style.id = 'dict-styles-v8';
       style.textContent = this._getCSS();
       document.head.appendChild(style);
     }
@@ -125,11 +128,21 @@ export class DictionaryScene extends Phaser.Scene {
   _getFiltered() {
     const term = (document.getElementById('dict-search')?.value || '').toLowerCase().trim();
     let all = this.dictionary.getAll();
+
+    // Filtro por escena
+    if (this._sceneFilter !== 'all') {
+      const lowerScene = this._sceneFilter.toLowerCase();
+      all = all.filter(w =>
+        w.sceneRef && w.sceneRef.toLowerCase().split(',').map(r => r.trim()).includes(lowerScene)
+      );
+    }
+
     if (term) {
       all = all.filter(w =>
         w.word.toLowerCase().includes(term) ||
         w.translation.toLowerCase().includes(term) ||
-        (w.category && w.category.toLowerCase().includes(term))
+        (w.category && w.category.toLowerCase().includes(term)) ||
+        (w.sceneRef && w.sceneRef.toLowerCase().includes(term))
       );
     }
     return this._applySorting(all);
@@ -183,43 +196,60 @@ export class DictionaryScene extends Phaser.Scene {
       const pinClass = w.pinned ? 'dict-pin-active' : 'dict-pin-inactive';
       const pinIcon = w.pinned ? '📌' : '📍';
       const hasRec = !!this._recordings[w.word];
-      const mainTranslation = String(w.translation || w.translation1 || w.translation2 || '').trim();
-      const extrasRaw = [w.translation1, w.translation2]
-        .map(v => String(v || '').trim())
-        .filter(Boolean);
+      const t1 = String(w.translation1 || '').trim();
+      const t2 = String(w.translation2 || '').trim();
+      const legacy = String(w.translation || '').trim();
 
-      const extras = [];
-      const seen = new Set([mainTranslation.toLowerCase()]);
-      extrasRaw.forEach(v => {
-        const key = v.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          extras.push(v);
+      const langInfo1 = i18n.trans1 ? i18n.getLangInfo(i18n.trans1) : null;
+      const langInfo2 = i18n.trans2 ? i18n.getLangInfo(i18n.trans2) : null;
+      const flag1 = langInfo1?.flag || '🌐';
+      const flag2 = langInfo2?.flag || '🌐';
+      const langName1 = langInfo1?.nativeName || '';
+
+      // Translation derivation logic:
+      // Canonical fields: translation1 (trans1 lang), translation2 (trans2 lang)
+      // Legacy field: historically Spanish. Place it in the best available slot.
+      let display1 = t1;
+      let display2 = t2;
+
+      if (!t1 && !t2 && legacy) {
+        // Only legacy exists: put it where it belongs
+        if (i18n.trans2) {
+          display2 = legacy; // Spanish goes to secondary slot
+        } else {
+          display1 = legacy; // No secondary slot — use primary
         }
-      });
-      const subT1 = extras[0] || '';
-      const subT2 = extras[1] || '';
+      } else if (!t1 && legacy) {
+        // t2 may or may not exist. Legacy fills primary slot.
+        display1 = legacy;
+      }
+
+      // Nifty: show a placeholder tag if primary translation is missing
+      const missingPrimary = !display1 && i18n.trans1;
+      const catLabel = this._esc(i18n.tCategory(w.category));
 
       return `
       <div class="dict-card" data-word="${this._escAttr(w.word)}">
-        <div class="dict-card-top">
-          <button class="dict-pin-btn ${pinClass}" data-pin="${this._escAttr(w.word)}" title="${w.pinned ? 'Quitar chinche (aprendida)' : 'Chinche: marcar para estudiar'}">${pinIcon}</button>
-          <div class="dict-card-main">
-            <span class="dict-word-text">${this._esc(w.word)}</span>
-            <div class="dict-trans-box">
-              <span class="dict-trans-main">${this._esc(mainTranslation)}</span>
-              ${subT1 ? `<span class="dict-trans-sub t1">${this._esc(subT1)}</span>` : ''}
-              ${subT2 ? `<span class="dict-trans-sub t2">${this._esc(subT2)}</span>` : ''}
-            </div>
+        <div class="dict-card-header">
+          <button class="dict-pin-btn ${pinClass}" data-pin="${this._escAttr(w.word)}" title="${w.pinned ? 'Quitar chinche' : 'Marcar para estudiar'}">${pinIcon}</button>
+          <span class="dict-badge">${catLabel}</span>
+          ${w.sceneRef ? `<span class="dict-badge-scene">${this._esc(w.sceneRef)}</span>` : ''}
+        </div>
+        <div class="dict-card-body">
+          <span class="dict-word-text">${this._esc(w.word)}</span>
+          <div class="dict-trans-box">
+            ${display1 ? `<div class="dict-trans-row"><span class="dict-flag">${flag1}</span><span class="dict-trans-main">${this._esc(display1)}</span></div>` : ''}
+            ${missingPrimary ? `<div class="dict-trans-row pending"><span class="dict-flag">${flag1}</span><span class="dict-trans-pending">⏳ ${langName1}...</span></div>` : ''}
+            ${display2 ? `<div class="dict-trans-row"><span class="dict-flag">${flag2}</span><span class="dict-trans-sub">${this._esc(display2)}</span></div>` : ''}
+            ${(!display1 && !display2 && !missingPrimary) ? `<span class="dict-trans-empty">(sin traducción)</span>` : ''}
           </div>
-          <span class="dict-badge">${this._esc(i18n.tCategory(w.category))}</span>
-          <div class="dict-card-actions">
-            <button class="dict-icon-btn dict-speak-btn" data-speak="${this._escAttr(w.word)}" title="Escuchar pronunciación">🔊</button>
-            <button class="dict-icon-btn dict-rec-btn ${hasRec ? 'has-rec' : ''}" data-rec="${this._escAttr(w.word)}" title="${hasRec ? 'Tiene grabación — click para grabar de nuevo' : 'Grabar mi pronunciación'}">🎙️</button>
-            ${hasRec ? `<button class="dict-icon-btn dict-play-btn" data-play="${this._escAttr(w.word)}" title="Escuchar mi grabación">▶️</button>` : ''}
-            <button class="dict-icon-btn dict-edit-btn" data-edit="${this._escAttr(w.word)}" title="Editar">✏️</button>
-            ${w.isCustom ? `<button class="dict-icon-btn dict-del-btn" data-del="${this._escAttr(w.word)}" title="Eliminar">🗑️</button>` : ''}
-          </div>
+        </div>
+        <div class="dict-card-footer">
+          <button class="dict-icon-btn dict-speak-btn" data-speak="${this._escAttr(w.word)}" title="Escuchar">🔊</button>
+          <button class="dict-icon-btn dict-rec-btn ${hasRec ? 'has-rec' : ''}" data-rec="${this._escAttr(w.word)}" title="Grabar">🎙️</button>
+          ${hasRec ? `<button class="dict-icon-btn dict-play-btn" data-play="${this._escAttr(w.word)}" title="Reproducir">▶️</button>` : ''}
+          <button class="dict-icon-btn dict-edit-btn" data-edit="${this._escAttr(w.word)}" title="Editar">✏️</button>
+          ${w.isCustom ? `<button class="dict-icon-btn dict-del-btn" data-del="${this._escAttr(w.word)}" title="Eliminar">🗑️</button>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -331,33 +361,141 @@ export class DictionaryScene extends Phaser.Scene {
     const catEl = document.getElementById('dict-in-cat');
     const exEl = document.getElementById('dict-in-ex');
 
-    const mainTranslation = String(w.translation || w.translation1 || w.translation2 || '').trim();
-    const secondaryCandidates = [w.translation2, w.translation1]
-      .map(v => String(v || '').trim())
-      .filter(Boolean);
-    const secondaryTranslation = secondaryCandidates.find(v => v.toLowerCase() !== mainTranslation.toLowerCase()) || '';
+    // Lógica para derivar traducciones
+    let t1 = String(w.translation1 || '').trim();
+    let t2 = String(w.translation2 || '').trim();
+    const legacy = String(w.translation || '').trim();
+
+    if (legacy && !t1 && !t2) {
+      if (i18n.trans2) { t2 = legacy; } else { t1 = legacy; }
+    } else if (legacy && !t1 && t2) {
+      t1 = legacy;
+    }
 
     if (wordEl) wordEl.value = w.word;
-    if (transEl) transEl.value = mainTranslation;
-    if (t2El) t2El.value = secondaryTranslation;
+    if (transEl) transEl.value = t1;
+    if (t2El) t2El.value = t2;
     if (catEl) catEl.value = w.category || '';
     if (exEl) exEl.value = w.example || '';
 
-    // Solo autocompletar si falta la traducción principal
-    if (!mainTranslation && w.word) {
-      this._translateWord('dict-in-word', 'de');
+    const sceneInput = document.getElementById('dict-in-scene');
+    if (sceneInput) sceneInput.value = w.sceneRef || '';
+
+    // Auto-traducir si falta translation1 (inglés)
+    if (!t1 && w.word) {
+      // Limpiar el campo inglés para mostrar que está cargando
+      if (transEl) transEl.placeholder = '⏳ Traduciendo...';
+      this._translateWord('dict-in-word', 'de').then(() => {
+        if (transEl) transEl.placeholder = '';
+        // Guardar la traducción obtenida en el campo canonical translation1
+        const newT1 = transEl?.value?.trim();
+        const newT2 = t2El?.value?.trim();
+        if (newT1) {
+          this.dictionary.updateWord(w.word, w.word, legacy || newT2 || newT1, w.category, w.example, newT1, newT2 || t2, w.sceneRef);
+          this._renderWordList();
+        }
+      });
     }
 
-    // Asegurar que se vean los extras (English/Spanish/Cat/Ex)
+    // Asegurar que se vean los extras
     const extraRows = document.getElementById('dict-form-extras');
     if (extraRows) extraRows.classList.remove('hidden');
 
     // Efecto visual de selección
     document.querySelectorAll('.dict-card').forEach(c => c.classList.remove('selected'));
     const card = document.querySelector(`.dict-card[data-word="${this._escAttr(wordName)}"]`);
-    if (card) card.classList.add('selected');
+    if (card) {
+      card.classList.add('selected');
+      this._showWordDetail(w, t1, t2, card);
+    }
 
     this._showToast(`📖 ${w.word}`);
+  }
+
+  _showWordDetail(w, t1, t2, cardEl) {
+    // Eliminar panel anterior si existe
+    document.getElementById('dict-word-detail')?.remove();
+
+    const legacy = String(w.translation || '').trim();
+    const displayT1 = t1 || '';
+    const displayT2 = t2 || legacy || '';
+    const lang1Info = i18n.trans1 ? i18n.getLangInfo(i18n.trans1) : null;
+    const lang2Info = i18n.trans2 ? i18n.getLangInfo(i18n.trans2) : null;
+
+    const panel = document.createElement('div');
+    panel.id = 'dict-word-detail';
+    panel.className = 'dict-detail-panel';
+    panel.innerHTML = `
+      <div class="dict-detail-header">
+        <span class="dict-detail-word">🇩🇪 ${this._esc(w.word)}</span>
+        <button class="dict-detail-close" id="dict-detail-close-btn" title="Cerrar">✕</button>
+      </div>
+      <div class="dict-detail-body">
+        ${displayT1 ? `<div class="dict-detail-row">
+          <span class="dict-detail-flag">${lang1Info?.flag || '🌐'}</span>
+          <span class="dict-detail-text primary">${this._esc(displayT1)}</span>
+        </div>` : `<div class="dict-detail-row loading" id="dict-detail-t1-row">
+          <span class="dict-detail-flag">${lang1Info?.flag || '🌐'}</span>
+          <span class="dict-detail-text" style="color:#64748b;">⏳ Traduciendo al ${lang1Info?.nativeName || 'inglés'}...</span>
+        </div>`}
+        ${displayT2 ? `<div class="dict-detail-row">
+          <span class="dict-detail-flag">${lang2Info?.flag || '🌐'}</span>
+          <span class="dict-detail-text secondary">${this._esc(displayT2)}</span>
+        </div>` : ''}
+        ${w.example ? `<div class="dict-detail-example">
+          <span class="dict-detail-example-label">📝</span>
+          <span class="dict-detail-example-text">${this._esc(w.example)}</span>
+        </div>` : ''}
+        ${w.category ? `<div class="dict-detail-cat">${this._esc(i18n.tCategory(w.category))}</div>` : ''}
+      </div>
+    `;
+
+    // Insertar después de la tarjeta
+    cardEl.insertAdjacentElement('afterend', panel);
+
+    panel.querySelector('#dict-detail-close-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.remove();
+      document.querySelectorAll('.dict-card').forEach(c => c.classList.remove('selected'));
+    });
+
+    // Si no había t1, escuchar mutaciones en el input para actualizar el panel cuando llegue la traducción
+    if (!displayT1) {
+      const transEl = document.getElementById('dict-in-trans');
+      if (transEl) {
+        const observer = new MutationObserver(() => { });
+        const onInput = () => {
+          const newT1 = transEl.value.trim();
+          if (newT1) {
+            const t1Row = document.getElementById('dict-detail-t1-row');
+            if (t1Row) {
+              t1Row.id = '';
+              t1Row.classList.remove('loading');
+              t1Row.innerHTML = `<span class="dict-detail-flag">${lang1Info?.flag || '🌐'}</span>
+                <span class="dict-detail-text primary">${this._esc(newT1)}</span>`;
+            }
+            transEl.removeEventListener('input', onInput);
+          }
+        };
+        // Poll en primer input o cuando cambie
+        transEl.addEventListener('input', onInput);
+        // También observar cambio de valor directo
+        const checkVal = setInterval(() => {
+          if (transEl.value.trim()) { onInput(); clearInterval(checkVal); }
+        }, 500);
+        setTimeout(() => clearInterval(checkVal), 15000);
+      }
+    }
+  }
+
+  _swapTranslationsInForm() {
+    const transEl = document.getElementById('dict-in-trans');
+    const t2El = document.getElementById('dict-in-t2');
+    if (!transEl || !t2El) return;
+    const tmp = transEl.value;
+    transEl.value = t2El.value;
+    t2El.value = tmp;
+    this._showToast('⇄ Traducciones intercambiadas');
   }
 
   /* ── TTS (Text-to-Speech) ───────────────────────────── */
@@ -471,6 +609,14 @@ export class DictionaryScene extends Phaser.Scene {
     const lang1 = i18n.trans1 ? i18n.getLangInfo(i18n.trans1).nativeName : i18n.t('dict_ph_trans');
     const lang2 = i18n.trans2 ? i18n.getLangInfo(i18n.trans2).nativeName : null;
 
+    // Lógica consistente para datos antiguos
+    let t1 = String(w.translation1 || '').trim();
+    let t2 = String(w.translation2 || '').trim();
+    const legacy = String(w.translation || '').trim();
+    if (legacy && !t1 && !t2) {
+      if (i18n.trans2 === 'es') { t2 = legacy; } else { t1 = legacy; }
+    }
+
     modal.innerHTML = `
       <div class="dict-modal-backdrop"></div>
       <div class="dict-modal-content">
@@ -480,13 +626,19 @@ export class DictionaryScene extends Phaser.Scene {
           <input id="edit-word" type="text" value="${this._escAttr(w.word)}" />
           
           <label>${lang1}</label>
-          <input id="edit-trans" type="text" value="${this._escAttr(w.translation)}" />
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <input id="edit-trans" type="text" style="flex: 1;" value="${this._escAttr(t1)}" />
+            ${lang2 ? `<button id="edit-swap-btn" type="button" class="dict-icon-btn" style="padding: 4px; font-size: 14px;" title="Intercambiar">⇄</button>` : ''}
+          </div>
           
-          ${lang2 ? `<label>${lang2}</label><input id="edit-t2" type="text" value="${this._escAttr(w.translation2 || '')}" />` : ''}
+          ${lang2 ? `<label>${lang2}</label><input id="edit-t2" type="text" value="${this._escAttr(t2)}" />` : ''}
           
           <label>${i18n.t('dict_ph_cat')}</label>
           <input id="edit-cat" type="text" value="${this._escAttr(i18n.tCategory(w.category))}" />
           
+          <label>Escena (Ref)</label>
+          <input id="edit-scene" type="text" value="${this._escAttr(w.sceneRef || '')}" />
+
           <label>${i18n.t('dict_ph_ex')}</label>
           <input id="edit-ex" type="text" value="${this._escAttr(w.example || '')}" />
         </div>
@@ -515,18 +667,31 @@ export class DictionaryScene extends Phaser.Scene {
       inp.addEventListener('keyup', e => e.stopPropagation());
     });
 
+    // Swap in modal
+    modal.querySelector('#edit-swap-btn')?.addEventListener('click', () => {
+      const transEl = document.getElementById('edit-trans');
+      const t2El = document.getElementById('edit-t2');
+      if (transEl && t2El) {
+        const tmp = transEl.value;
+        transEl.value = t2El.value;
+        t2El.value = tmp;
+        this._showToast('⇄ Intercambiadas');
+      }
+    });
+
     // Save
     modal.querySelector('#edit-save-btn').addEventListener('click', () => {
       const newWord = document.getElementById('edit-word').value.trim();
       const newTrans = document.getElementById('edit-trans').value.trim();
       const t2Input = document.getElementById('edit-t2');
-      const newT1 = String(w.translation1 || '').trim();
-      const newT2 = t2Input ? t2Input.value.trim() : String(w.translation2 || '').trim();
+      const newT1 = newTrans; // Sincronizar principal con T1
+      const newT2 = t2Input ? t2Input.value.trim() : t2;
       const newCat = document.getElementById('edit-cat').value.trim();
       const newEx = document.getElementById('edit-ex').value.trim();
+      const newScene = (document.getElementById('edit-scene')?.value || '').trim();
 
       if (newWord && newTrans) {
-        this.dictionary.updateWord(word, newWord, newTrans, newCat, newEx, newT1, newT2);
+        this.dictionary.updateWord(word, newWord, newTrans, newCat, newEx, newT1, newT2, newScene);
         this._renderWordList();
       }
       modal.remove();
@@ -784,6 +949,9 @@ export class DictionaryScene extends Phaser.Scene {
              Utiliza estas opciones para gestionar el diccionario masivamente, tal y como en el gestor externo.
            </p>
            <button id="maint-starter-btn" class="dict-modal-save" style="width: 100%; margin-bottom: 8px;">🚀 ${i18n.t('dict_btn_starter').toUpperCase()}</button>
+           <button id="maint-autofill-btn" class="dict-modal-save" style="width: 100%; margin-bottom: 8px; background: #22c55e;">✨ AUTO-RELLENAR TRADUCCIONES</button>
+           <button id="maint-migrate-btn" class="dict-modal-save" style="width: 100%; margin-bottom: 8px; background: #6366f1;">🧹 MIGRAR DICCIONARIO ANTIGUO</button>
+           <button id="maint-swap-all" class="dict-modal-save" style="width: 100%; margin-bottom: 8px; background: #4f46e5;">⇄ INTERCAMBIAR T1/T2 (TODO)</button>
            <button id="maint-clear-custom" class="dict-modal-cancel" style="width: 100%; margin-bottom: 8px;">🗑️ ${i18n.t('dict_btn_clear_custom').toUpperCase()}</button>
            <button id="maint-clear-all" class="dict-btn-danger" style="width: 100%; height: 32px;">⚠️ ${i18n.t('dict_btn_clear_all').toUpperCase()}</button>
         </div>
@@ -839,6 +1007,81 @@ export class DictionaryScene extends Phaser.Scene {
       }
     });
 
+    // Autofill
+    modal.querySelector('#maint-autofill-btn').addEventListener('click', async () => {
+      const words = this.dictionary.getAll();
+      const missing = words.filter(w => !w.translation1 || !w.translation2);
+      if (missing.length === 0) {
+        this._showToast('✔ Todas las palabras están completas');
+        return;
+      }
+
+      if (confirm(`¿Auto-completar traducciones para ${missing.length} palabras? (Usará IA)`)) {
+        this._showToast(`⏳ Rellenando ${missing.length} palabras...`);
+        modal.remove();
+
+        // Ejecutar en lotes/secuencia para no saturar
+        let count = 0;
+        for (const w of missing) {
+          try {
+            // Llamamos al proxy individualmente por ahora
+            const res = await fetch(`${i18n.PROXY}/translate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-game-secret': 'wid-secret-2026'
+              },
+              body: JSON.stringify({
+                word: w.word,
+                trans1: i18n.trans1,
+                trans2: i18n.trans2
+              })
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.dictionary.updateWord(w.word, w.word, data.translation1 || data.translation || '', data.category || w.category, data.example || w.example, data.translation1, data.translation2, w.sceneRef);
+              count++;
+            }
+          } catch (e) { console.warn('Bulk fail:', w.word); }
+          // Un pequeño respiro
+          await new Promise(r => setTimeout(r, 200));
+        }
+
+        this._showToast(`✔ ${count} palabras actualizadas`);
+        this._renderWordList();
+        if (this.input?.keyboard) this.input.keyboard.enabled = true;
+      }
+    });
+
+    // Migrate Legacy
+    modal.querySelector('#maint-migrate-btn').addEventListener('click', () => {
+      if (confirm('¿Mover traducciones antiguas al campo secundario para habilitar inglés automático?')) {
+        const changed = this.dictionary.migrateLegacyTranslations();
+        this._showToast(`✔ ${changed} palabras migradas`);
+        this._renderWordList();
+        modal.remove();
+        if (this.input?.keyboard) this.input.keyboard.enabled = true;
+      }
+    });
+
+    // Swap All
+    modal.querySelector('#maint-swap-all').addEventListener('click', () => {
+      if (confirm('¿Intercambiar todas las traducciones primarias y secundarias del diccionario?')) {
+        const words = this.dictionary.getAll();
+        let changed = 0;
+        words.forEach(w => {
+          const t1 = String(w.translation || w.translation1 || '').trim();
+          const t2 = String(w.translation2 || '').trim();
+          this.dictionary.updateWord(w.word, w.word, t2, w.category, w.example, t2, t1, w.sceneRef);
+          changed++;
+        });
+        this._showToast(`✔ ${changed} palabras actualizadas`);
+        this._renderWordList();
+        modal.remove();
+        if (this.input?.keyboard) this.input.keyboard.enabled = true;
+      }
+    });
+
     modal.querySelector('#maint-close-btn').addEventListener('click', () => {
       modal.remove();
       if (this.input?.keyboard) this.input.keyboard.enabled = true;
@@ -854,7 +1097,6 @@ export class DictionaryScene extends Phaser.Scene {
 
     const wordEl = document.getElementById('dict-in-word');
     const transEl = document.getElementById('dict-in-trans');
-    const t1El = document.getElementById('dict-in-t1');
     const t2El = document.getElementById('dict-in-t2');
     const catEl = document.getElementById('dict-in-cat');
     const exEl = document.getElementById('dict-in-ex');
@@ -916,14 +1158,12 @@ export class DictionaryScene extends Phaser.Scene {
   _addWord() {
     const wordEl = document.getElementById('dict-in-word');
     const transEl = document.getElementById('dict-in-trans');
-    const t1El = document.getElementById('dict-in-t1');
     const t2El = document.getElementById('dict-in-t2');
     const catEl = document.getElementById('dict-in-cat');
     const exEl = document.getElementById('dict-in-ex');
 
     const word = (wordEl?.value || '').trim();
     const trans = (transEl?.value || '').trim();
-    const t1 = (t1El?.value || '').trim();
     const t2 = (t2El?.value || '').trim();
     const cat = ((catEl?.value || '').trim() || 'general').toLowerCase();
     const ex = (exEl?.value || '').trim();
@@ -933,12 +1173,11 @@ export class DictionaryScene extends Phaser.Scene {
       return;
     }
 
-    const ok = this.dictionary.addWord(word, trans, cat, ex, t1, t2);
+    const ok = this.dictionary.addWord(word, trans, cat, ex, trans, t2);
     if (ok) {
       this._showToast(`✔ "${word}" agregada`);
       if (wordEl) wordEl.value = '';
       if (transEl) transEl.value = '';
-      if (t1El) t1El.value = '';
       if (t2El) t2El.value = '';
       if (catEl) catEl.value = '';
       if (exEl) exEl.value = '';
@@ -1044,6 +1283,15 @@ export class DictionaryScene extends Phaser.Scene {
       });
     });
 
+    // Scene filter
+    const sceneSel = document.getElementById('dict-scene-sel');
+    if (sceneSel) {
+      sceneSel.addEventListener('change', (e) => {
+        this._sceneFilter = e.target.value;
+        this._renderWordList();
+      });
+    }
+
     // Add button
     document.getElementById('dict-add-btn')?.addEventListener('click', () => this._addWord());
 
@@ -1052,6 +1300,9 @@ export class DictionaryScene extends Phaser.Scene {
 
     // Dictionary Settings
     document.getElementById('dict-settings-btn')?.addEventListener('click', () => this._openSettings());
+
+    // Swap button in form
+    document.getElementById('dict-swap-btn')?.addEventListener('click', () => this._swapTranslationsInForm());
 
     // Maintenance button (Gestor options)
     document.getElementById('dict-maint-btn')?.addEventListener('click', () => this._openMaintenanceModal());
@@ -1072,7 +1323,7 @@ export class DictionaryScene extends Phaser.Scene {
     });
 
     // Enter in form inputs
-    ['dict-in-word', 'dict-in-trans', 'dict-in-t1', 'dict-in-t2', 'dict-in-cat', 'dict-in-ex'].forEach(id => {
+    ['dict-in-word', 'dict-in-trans', 'dict-in-t2', 'dict-in-cat', 'dict-in-ex'].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('keydown', (e) => {
@@ -1173,6 +1424,11 @@ export class DictionaryScene extends Phaser.Scene {
   /* ── HTML template ──────────────────────────────────── */
 
   _getHTML() {
+    const t1Info = i18n.trans1 ? i18n.getLangInfo(i18n.trans1) : null;
+    const t2Info = i18n.trans2 ? i18n.getLangInfo(i18n.trans2) : null;
+    const t1Placeholder = t1Info ? `${t1Info.flag} ${t1Info.nativeName}` : 'Traducción 1';
+    const t2Placeholder = t2Info ? `${t2Info.flag} ${t2Info.nativeName}` : 'Traducción 2';
+
     return `
       <div id="dict-panel">
         <!-- Header -->
@@ -1182,27 +1438,40 @@ export class DictionaryScene extends Phaser.Scene {
             <span>${i18n.t('dict_title')}</span>
           </div>
           <div id="dict-stats">${i18n.t('dict_loading')}</div>
-          <button id="dict-maint-btn" class="dict-header-btn" title="Opciones de gestor">📂</button>
-          <button id="dict-settings-btn" class="dict-header-btn" title="Configuración de traducciones">⚙️</button>
-          <button id="dict-back-btn" class="dict-back">✕ ${i18n.t('dict_close')}</button>
+          <div id="dict-header-actions">
+            <button id="dict-maint-btn" class="dict-header-btn" title="Opciones de gestor">📂</button>
+            <button id="dict-settings-btn" class="dict-header-btn" title="Configuración de traducciones">⚙️</button>
+            <button id="dict-back-btn" class="dict-back">✕ ${i18n.t('dict_close')}</button>
+          </div>
         </div>
 
         <!-- Form -->
         <div id="dict-form-section">
           <div id="dict-form-row">
-            <div class="dict-form-group" style="flex: 1.2;">
-              <input id="dict-in-word" type="text" placeholder="Wort (Deutsch)" autocomplete="off" spellcheck="false" />
+            <div class="dict-form-group" style="flex: 2; min-width: 100px;">
+              <input id="dict-in-word" type="text" placeholder="🇩🇪 Wort (Deutsch)" autocomplete="off" spellcheck="false" />
             </div>
-            <div class="dict-form-group" style="flex: 1.5;">
-              <input id="dict-in-trans" type="text" placeholder="English / Principal" autocomplete="off" spellcheck="false" />
+            <div class="dict-form-group" style="flex: 2; min-width: 100px;">
+              <input id="dict-in-trans" type="text" placeholder="${t1Placeholder}" autocomplete="off" spellcheck="false" />
             </div>
-            <button id="dict-add-btn" title="${i18n.t('dict_btn_add')}">✔</button>
-            <button id="dict-clear-btn" class="dict-btn-danger" title="${i18n.t('dict_btn_clear')}">✕</button>
+            ${i18n.trans2 ? `
+            <div class="dict-form-group" style="flex: 2; min-width: 100px;">
+              <input id="dict-in-t2" type="text" placeholder="${t2Placeholder}" autocomplete="off" spellcheck="false" />
+            </div>
+            ` : ''}
+            <div style="display: flex; gap: 6px; flex-shrink: 0; align-items: center;">
+              ${i18n.trans2 ? `<button id="dict-swap-btn" type="button" title="Intercambiar T1/T2" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 14px; cursor: pointer; color: #94a3b8; padding: 4px 8px; border-radius: 6px; height: 28px; display: flex; align-items: center;">⇄</button>` : ''}
+              <button id="dict-add-btn" class="dict-action-btn primary" title="${i18n.t('dict_btn_add')}">+ ADD</button>
+              <button id="dict-clear-btn" class="dict-action-btn secondary" title="${i18n.t('dict_btn_clear')}">✕</button>
+            </div>
           </div>
           <div id="dict-form-extras" class="hidden">
-            <input id="dict-in-t2" type="text" placeholder="Spanish / Secundaria" autocomplete="off" spellcheck="false" />
-            <input id="dict-in-cat" type="text" placeholder="Category" autocomplete="off" spellcheck="false" />
-            <input id="dict-in-ex" type="text" placeholder="Beispiel (Ejemplo)" autocomplete="off" spellcheck="false" />
+            <div class="dict-form-grid">
+              ${!i18n.trans2 ? `<input id="dict-in-t2" type="text" placeholder="${t2Placeholder}" autocomplete="off" spellcheck="false" />` : ''}
+              <input id="dict-in-cat" type="text" placeholder="Kategorie" autocomplete="off" spellcheck="false" />
+              <input id="dict-in-scene" type="text" placeholder="Szene (H1/E1)" autocomplete="off" spellcheck="false" />
+              <input id="dict-in-ex" type="text" placeholder="Beispiel / Example" autocomplete="off" spellcheck="false" />
+            </div>
           </div>
         </div>
 
@@ -1212,16 +1481,30 @@ export class DictionaryScene extends Phaser.Scene {
             <span class="dict-search-icon">🔍</span>
             <input id="dict-search" type="text" placeholder="${i18n.t('dict_search_ph')}" autocomplete="off" />
           </div>
-          <div id="dict-sort-bar">
-            <button class="dict-sort-btn active" data-sort="alpha-asc" title="A→Z">A↓</button>
-            <button class="dict-sort-btn" data-sort="alpha-desc" title="Z→A">Z↓</button>
-            <button class="dict-sort-btn" data-sort="date-new" title="${i18n.t('dict_sort_recent')}">🕐↓</button>
-            <button class="dict-sort-btn" data-sort="category" title="${i18n.t('dict_sort_cat')}">📁</button>
-            <button class="dict-sort-btn" data-sort="pinned" title="${i18n.t('dict_sort_pinned')}">📌</button>
+          <div id="dict-filters">
+            <div class="dict-filter-group">
+              <span class="dict-filter-label">ORDEN:</span>
+              <div id="dict-sort-bar">
+                <button class="dict-sort-btn active" data-sort="alpha-asc" title="A→Z">A-Z</button>
+                <button class="dict-sort-btn" data-sort="alpha-desc" title="Z→A">Z-A</button>
+                <button class="dict-sort-btn" data-sort="date-new" title="${i18n.t('dict_sort_recent')}">RECIENTES</button>
+                <button class="dict-sort-btn" data-sort="category" title="${i18n.t('dict_sort_cat')}">CAT</button>
+                <button class="dict-sort-btn" data-sort="pinned" title="${i18n.t('dict_sort_pinned')}">📌</button>
+              </div>
+            </div>
+            <div class="dict-filter-group">
+              <span class="dict-filter-label">ESCENA:</span>
+              <select id="dict-scene-sel" class="dict-scene-sel">
+                <option value="all">TODAS</option>
+                ${this.dictionary.getSceneIndex().map(s => `
+                  <option value="${s.ref}" ${this._sceneFilter === s.ref ? 'selected' : ''}>${s.label} (${s.count})</option>
+                `).join('')}
+              </select>
+            </div>
           </div>
           <div id="dict-file-bar">
-            <button id="dict-import-btn" class="dict-file-btn" title="Importar">📥 ${i18n.t('dict_import')}</button>
-            <button id="dict-export-btn" class="dict-file-btn" title="Exportar">📤 ${i18n.t('dict_export')}</button>
+            <button id="dict-import-btn" class="dict-outline-btn">📥 ${i18n.t('dict_import')}</button>
+            <button id="dict-export-btn" class="dict-outline-btn">📤 ${i18n.t('dict_export')}</button>
           </div>
         </div>
 
@@ -1237,84 +1520,93 @@ export class DictionaryScene extends Phaser.Scene {
 
   _getCSS() {
     return `
-      /* ─── Reset old styles ─── */
-      #dict-styles { display: none !important; }
+      /* ─── Dictionary Modern UI ─── */
 
-      /* ─── Overlay container ─── */
       #dict-overlay {
         position: absolute;
         inset: 0;
         z-index: 500;
         display: flex;
-        font-family: 'VT323', monospace;
+        font-family: 'Inter', sans-serif;
         pointer-events: auto;
       }
 
-      /* ─── Panel principal ─── */
       #dict-panel {
         flex: 1;
         display: flex;
         flex-direction: column;
-        background: #07071a;
-        color: #c8c8d8;
-        overflow: hidden;            /* IMPORTANT: panel itself doesn't scroll */
+        background: #0f172a;
+        color: #f1f5f9;
+        overflow: hidden;
         max-height: 100%;
       }
 
-      /* ─── Header ─── */
+      /* Header */
       #dict-header {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 6px 12px;
-        background: #0d0d28;
-        border-bottom: 2px solid #00ff41;
+        padding: 8px 14px;
+        background: #0f172a;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
         flex-shrink: 0;
-        min-height: 36px;
       }
 
       #dict-title {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 10px;
-        color: #00ff41;
-        text-shadow: 0 0 8px #00ff41;
+        font-family: 'Outfit', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: #f8fafc;
         display: flex;
         align-items: center;
         gap: 6px;
-        white-space: nowrap;
       }
-      .dict-title-icon { font-size: 14px; }
+      .dict-title-icon { font-size: 15px; }
 
       #dict-stats {
-        font-size: 12px;
-        color: #ffcc00;
+        font-size: 11px;
+        color: #94a3b8;
         flex: 1;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-weight: 500;
       }
+
+      #dict-header-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .dict-header-btn {
+        background: transparent;
+        border: none;
+        color: #64748b;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 3px 5px;
+        border-radius: 5px;
+        transition: color 0.2s, background 0.2s;
+      }
+      .dict-header-btn:hover { color: #38bdf8; background: rgba(56,189,248,0.1); }
 
       .dict-back {
-        font-family: 'VT323', monospace;
-        font-size: 13px;
-        background: #2a0a0a;
-        border: 1px solid #ff6666;
-        color: #ff6666;
-        padding: 3px 10px;
+        background: #334155;
+        border: none;
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 5px 10px;
+        border-radius: 7px;
         cursor: pointer;
-        border-radius: 2px;
-        transition: background 0.15s;
-        white-space: nowrap;
-        flex-shrink: 0;
+        transition: background 0.2s;
       }
-      .dict-back:hover { background: #3d1010; box-shadow: 0 0 6px #ff666688; }
+      .dict-back:hover { background: #475569; }
 
-      /* ─── Form section ─── */
+      /* Form */
       #dict-form-section {
-        padding: 6px 12px;
-        background: #0a0a22;
-        border-bottom: 1px solid #1e1e44;
+        padding: 8px 14px;
+        background: #1e293b;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
         flex-shrink: 0;
       }
 
@@ -1322,75 +1614,61 @@ export class DictionaryScene extends Phaser.Scene {
         display: flex;
         gap: 6px;
         align-items: center;
-        flex-wrap: wrap;
       }
 
-      .dict-form-group { flex: 2; min-width: 100px; }
+      .dict-form-group { flex: 2; min-width: 80px; }
 
       #dict-form-row input, #dict-form-extras input {
         width: 100%;
-        padding: 5px 8px;
-        background: #10102e;
-        border: 1px solid #2a2a55;
-        color: #e0e0f0;
-        font-family: 'VT323', monospace;
-        font-size: 15px;
-        border-radius: 2px;
+        padding: 5px 9px;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        border-radius: 6px;
         outline: none;
-        transition: border-color 0.15s;
+        transition: border-color 0.2s;
         box-sizing: border-box;
       }
       #dict-form-row input:focus, #dict-form-extras input:focus {
-        border-color: #00ff41;
-        box-shadow: 0 0 4px #00ff4166;
+        border-color: #38bdf8;
       }
-      #dict-form-row input::placeholder, #dict-form-extras input::placeholder { color: #555577; }
+      #dict-form-row input::placeholder, #dict-form-extras input::placeholder { color: #475569; }
 
-      #dict-form-extras {
-        display: flex;
-        gap: 6px;
-        margin-top: 6px;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
+      .dict-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
       }
-      #dict-form-extras.hidden { 
-        display: none; 
-      }
-      #dict-form-extras input { flex: 1; min-width: 0; }
 
-      #dict-form-toggle {
-        color: #00ccff;
-        text-decoration: none;
-        font-size: 16px;
-        opacity: 0.7;
+      #dict-form-extras.hidden { display: none; }
+
+      .dict-action-btn {
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        white-space: nowrap;
         transition: opacity 0.2s;
         flex-shrink: 0;
       }
-      #dict-form-toggle:hover { opacity: 1; }
+      .dict-action-btn:hover { opacity: 0.85; }
+      .dict-action-btn.primary  { background: #38bdf8; color: #fff; }
+      .dict-action-btn.secondary { background: #334155; color: #cbd5e1; }
 
-      #dict-add-btn {
-        font-family: 'VT323', monospace;
-        font-size: 14px;
-        padding: 4px 12px;
-        background: #0a2a0a;
-        border: 1px solid #00ff41;
-        color: #00ff41;
-        cursor: pointer;
-        border-radius: 2px;
-        white-space: nowrap;
-        transition: background 0.15s;
-        flex-shrink: 0;
-      }
-      #dict-add-btn:hover { background: #1a4a1a; box-shadow: 0 0 6px #00ff4188; }
-
-      /* ─── Toolbar ─── */
+      /* Toolbar */
       #dict-toolbar {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 5px 12px;
-        background: #08082a;
-        border-bottom: 1px solid #181840;
+        gap: 10px;
+        padding: 6px 14px;
+        background: #1e293b;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
         flex-shrink: 0;
         flex-wrap: wrap;
       }
@@ -1398,403 +1676,499 @@ export class DictionaryScene extends Phaser.Scene {
       #dict-search-bar {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 8px;
         flex: 1;
-        min-width: 120px;
+        min-width: 140px;
       }
-      .dict-search-icon { font-size: 13px; }
+      .dict-search-icon { font-size: 14px; color: #64748b; }
 
       #dict-search {
         flex: 1;
-        padding: 4px 8px;
-        background: #10102e;
-        border: 1px solid #2a2a55;
-        color: #e0e0f0;
-        font-family: 'VT323', monospace;
-        font-size: 15px;
-        border-radius: 2px;
+        padding: 5px 9px;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        border-radius: 6px;
         outline: none;
         min-width: 80px;
       }
-      #dict-search:focus { border-color: #00ccff; box-shadow: 0 0 4px #00ccff66; }
-      #dict-search::placeholder { color: #444466; }
+      #dict-search:focus { border-color: #38bdf8; }
+      #dict-search::placeholder { color: #475569; }
+
+      #dict-filters {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .dict-filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dict-filter-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        white-space: nowrap;
+      }
 
       #dict-sort-bar {
         display: flex;
-        gap: 3px;
-        flex-shrink: 0;
+        gap: 4px;
       }
 
       .dict-sort-btn {
-        font-family: 'VT323', monospace;
-        font-size: 13px;
-        padding: 3px 7px;
-        background: #0d0d28;
-        border: 1px solid #2a2a55;
-        color: #8888aa;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 5px 10px;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #94a3b8;
         cursor: pointer;
-        border-radius: 2px;
+        border-radius: 6px;
         transition: all 0.15s;
         white-space: nowrap;
       }
-      .dict-sort-btn:hover { border-color: #00ccff; color: #00ccff; }
-      .dict-sort-btn.active { border-color: #00ff41; color: #00ff41; background: #0a1a0a; }
+      .dict-sort-btn:hover { border-color: #38bdf8; color: #38bdf8; }
+      .dict-sort-btn.active { background: #38bdf8; color: #fff; border-color: #38bdf8; }
+
+      .dict-scene-sel {
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #38bdf8;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 10px;
+        border-radius: 6px;
+        outline: none;
+        cursor: pointer;
+      }
 
       #dict-file-bar {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         flex-shrink: 0;
       }
 
-      .dict-file-btn {
-        font-family: 'VT323', monospace;
-        font-size: 13px;
-        padding: 3px 8px;
-        background: #0d0d28;
-        border: 1px solid #2a2a55;
-        color: #aaaacc;
+      .dict-outline-btn {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #94a3b8;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
         cursor: pointer;
-        border-radius: 2px;
-        transition: all 0.15s;
+        transition: border-color 0.2s, color 0.2s;
         white-space: nowrap;
       }
-      .dict-file-btn:hover { border-color: #ffcc00; color: #ffcc00; }
+      .dict-outline-btn:hover { border-color: #38bdf8; color: #38bdf8; }
 
-      /* ─── Word list wrapper — THIS IS THE KEY FIX ─── */
+      /* Word list */
       #dict-list-wrap {
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
-        min-height: 0;            /* critical for flex overflow */
+        min-height: 0;
+        background: #0f172a;
+        padding: 10px;
         scrollbar-width: thin;
-        scrollbar-color: #00ff4144 #0a0a1a;
-        padding: 4px 0;
+        scrollbar-color: #334155 #0f172a;
       }
-      #dict-list-wrap::-webkit-scrollbar { width: 6px; }
-      #dict-list-wrap::-webkit-scrollbar-track { background: #0a0a1a; }
-      #dict-list-wrap::-webkit-scrollbar-thumb { background: #00ff4144; border-radius: 3px; }
+      #dict-list-wrap::-webkit-scrollbar { width: 4px; }
+      #dict-list-wrap::-webkit-scrollbar-track { background: #0f172a; }
+      #dict-list-wrap::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
       #dict-list {
-        padding: 0 10px 10px 10px;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 10px;
+        align-items: start;
       }
 
-      /* ─── Word cards ─── */
+      /* Cards — vertical layout */
       .dict-card {
-        background: #0c0c28;
-        border: 1px solid #1a1a44;
-        border-radius: 4px;
-        padding: 6px 10px;
-        margin-bottom: 4px;
-        transition: background 0.1s, border-color 0.1s;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+        display: flex;
+        flex-direction: column;
       }
       .dict-card:hover {
-        background: #111140;
-        border-color: #2a2a66;
+        border-color: rgba(56,189,248,0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
       }
       .dict-card.selected {
-        background: #1a1a4a;
-        border-color: #00ccff;
-        box-shadow: inset 0 0 10px #00ccff22;
+        border-color: rgba(56,189,248,0.7);
+        box-shadow: 0 0 0 2px rgba(56,189,248,0.15);
       }
 
-      .dict-card-top {
+      /* Card sections */
+      .dict-card-header {
         display: flex;
         align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
+        gap: 6px;
+        padding: 7px 10px 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
       }
 
-      .dict-card-main {
+      .dict-pin-btn {
+        background: transparent;
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        opacity: 0.3;
+        transition: opacity 0.2s, transform 0.15s;
+        flex-shrink: 0;
+        padding: 0;
+        line-height: 1;
+      }
+      .dict-pin-btn:hover { opacity: 0.8; transform: scale(1.2); }
+      .dict-pin-btn.dict-pin-active { opacity: 1; }
+
+      .dict-card-body {
+        padding: 8px 10px 7px;
         flex: 1;
-        display: flex;
-        gap: 8px;
-        align-items: baseline;
-        min-width: 0;
-        flex-wrap: wrap;
       }
 
       .dict-word-text {
-        color: #00ff41;
-        font-size: 16px;
-        font-weight: bold;
-        white-space: nowrap;
+        display: block;
+        font-family: 'Outfit', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #f1f5f9;
+        margin-bottom: 5px;
+        line-height: 1.2;
+        word-break: break-word;
       }
+
       .dict-trans-box {
         display: flex;
-        gap: 6px;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .dict-trans-row {
+        display: flex;
         align-items: baseline;
-        flex-wrap: wrap;
+        gap: 5px;
         min-width: 0;
       }
+      .dict-flag {
+        font-size: 11px;
+        flex-shrink: 0;
+        line-height: 1.4;
+      }
       .dict-trans-main {
-        color: #00ccff;
-        font-size: 14px;
-        white-space: nowrap;
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: #38bdf8;
+        word-break: break-word;
       }
       .dict-trans-sub {
+        font-family: 'Inter', sans-serif;
         font-size: 11px;
-        white-space: nowrap;
-        opacity: 0.8;
+        color: #94a3b8;
+        word-break: break-word;
       }
-      .dict-trans-sub.t1 { color: #aa88ff; }
-      .dict-trans-sub.t2 { color: #ff88aa; }
+      .dict-trans-pending {
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        color: #475569;
+        font-style: italic;
+      }
+      .dict-trans-empty {
+        font-size: 11px;
+        color: #475569;
+        font-style: italic;
+      }
 
       .dict-badge {
-        display: inline-block;
-        padding: 1px 6px;
-        background: #12123a;
-        border: 1px solid #2a2a60;
-        border-radius: 10px;
-        font-size: 11px;
-        color: #9999cc;
+        font-family: 'Inter', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        background: rgba(255,255,255,0.06);
+        color: #64748b;
+        padding: 2px 7px;
+        border-radius: 4px;
         white-space: nowrap;
-        flex-shrink: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
       }
 
-      .dict-card-example {
-        font-size: 12px;
-        color: #666688;
-        font-style: italic;
-        margin-top: 3px;
-        padding-left: 28px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      .dict-badge-scene {
+        font-family: 'Inter', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        background: rgba(168,85,247,0.12);
+        color: #a855f7;
+        padding: 2px 7px;
+        border-radius: 4px;
         white-space: nowrap;
+        letter-spacing: 0.4px;
       }
 
-      /* ─── Card action buttons ─── */
-      .dict-card-actions {
+      .dict-card-footer {
         display: flex;
+        align-items: center;
         gap: 3px;
-        flex-shrink: 0;
+        padding: 5px 8px;
+        background: rgba(0,0,0,0.15);
+        border-top: 1px solid rgba(255,255,255,0.04);
       }
 
       .dict-icon-btn {
-        background: none;
-        border: 1px solid transparent;
-        font-size: 14px;
-        width: 26px;
+        background: transparent;
+        border: none;
+        color: #475569;
+        font-size: 12px;
+        width: 24px;
         height: 24px;
         cursor: pointer;
-        border-radius: 2px;
+        border-radius: 5px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.15s;
-        padding: 0;
-      }
-      .dict-icon-btn:hover {
-        background: #1a1a44;
-        border-color: #3a3a66;
-      }
-
-      .dict-speak-btn:hover { border-color: #00ff41; }
-      .dict-rec-btn:hover { border-color: #ff4444; }
-      .dict-rec-btn.recording { border-color: #ff0000; background: #3a0a0a; animation: pulse-rec 0.8s infinite; }
-      .dict-rec-btn.has-rec { border-color: #ff880044; }
-      .dict-play-btn:hover { border-color: #ffcc00; }
-      .dict-edit-btn:hover { border-color: #00ccff; }
-      .dict-del-btn:hover { border-color: #ff6666; background: #2a0a0a; }
-
-      @keyframes pulse-rec {
-        0%,100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-
-      /* ─── Pin button ─── */
-      .dict-pin-btn {
-        background: none;
-        border: none;
-        font-size: 15px;
-        cursor: pointer;
-        padding: 0 2px;
-        transition: transform 0.15s;
+        transition: color 0.15s, background 0.15s;
         flex-shrink: 0;
       }
-      .dict-pin-btn:hover { transform: scale(1.3); }
-      .dict-pin-active { filter: drop-shadow(0 0 3px #ff6600); }
-      .dict-pin-inactive { opacity: 0.3; }
+      .dict-icon-btn:hover { background: rgba(56,189,248,0.1); color: #38bdf8; }
+      .dict-icon-btn.has-rec { color: #f59e0b; }
+      .dict-icon-btn.recording { color: #ef4444; animation: blink 1s infinite; }
 
-      /* ─── Empty state ─── */
+      @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+      /* Empty state */
       .dict-empty {
+        grid-column: 1 / -1;
         text-align: center;
-        padding: 40px 20px;
-        color: #444466;
-        font-size: 15px;
+        padding: 60px 20px;
+        color: #334155;
       }
-      .dict-empty-icon {
-        font-size: 40px;
-        margin-bottom: 12px;
-        opacity: 0.4;
-      }
+      .dict-empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.3; }
 
-      /* ─── Toast ─── */
-      #dict-toast {
-        position: absolute;
-        bottom: 12px;
-        left: 50%;
-        transform: translateX(-50%) translateY(60px);
-        background: #0d0d28ee;
-        border: 1px solid #00ff41;
-        color: #c8c8d8;
-        padding: 6px 16px;
-        font-size: 14px;
-        border-radius: 4px;
-        pointer-events: none;
-        opacity: 0;
-        transition: transform 0.25s ease-out, opacity 0.25s;
-        z-index: 600;
-        white-space: nowrap;
-        max-width: 90%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      #dict-toast.visible {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
-
-      /* ─── Edit modal ─── */
+      /* Modals */
       .dict-modal-backdrop {
         position: absolute;
         inset: 0;
-        background: #000000aa;
+        background: rgba(0,0,0,0.7);
         z-index: 700;
+        backdrop-filter: blur(4px);
       }
       .dict-modal-content {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: #0d0d28;
-        border: 2px solid #00ccff;
-        border-radius: 6px;
-        padding: 16px 20px;
+        background: #1e293b;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 24px;
         z-index: 710;
         width: 90%;
         max-width: 380px;
-        box-shadow: 0 0 30px #00ccff33;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
       }
       .dict-modal-title {
-        font-family: 'Press Start 2P', monospace;
-        font-size: 10px;
-        color: #00ccff;
-        margin-bottom: 12px;
+        font-family: 'Outfit', sans-serif;
+        font-size: 17px;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 16px;
         text-align: center;
       }
       .dict-modal-fields {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 8px;
       }
       .dict-modal-fields label {
-        font-size: 11px;
-        color: #8888aa;
-        margin-top: 3px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
       .dict-modal-fields input {
-        padding: 5px 8px;
-        background: #10102e;
-        border: 1px solid #2a2a55;
-        color: #e0e0f0;
-        font-family: 'VT323', monospace;
-        font-size: 15px;
-        border-radius: 2px;
+        padding: 9px 14px;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        border-radius: 8px;
         outline: none;
         width: 100%;
         box-sizing: border-box;
+        transition: border-color 0.2s;
       }
-      .dict-modal-fields input:focus {
-        border-color: #00ccff;
-        box-shadow: 0 0 4px #00ccff44;
-      }
+      .dict-modal-fields input:focus { border-color: #38bdf8; }
       .dict-modal-actions {
         display: flex;
-        gap: 8px;
+        gap: 10px;
         justify-content: center;
-        margin-top: 14px;
+        margin-top: 18px;
       }
       .dict-modal-save {
-        font-family: 'VT323', monospace;
+        flex: 2;
+        font-family: 'Inter', sans-serif;
         font-size: 14px;
-        padding: 5px 16px;
-        background: #0a2a0a;
-        border: 1px solid #00ff41;
-        color: #00ff41;
-        cursor: pointer;
-        border-radius: 2px;
-        transition: background 0.15s;
-      }
-      .dict-modal-save:hover { background: #1a4a1a; }
-      .dict-modal-cancel {
-        font-family: 'VT323', monospace;
-        font-size: 14px;
-        padding: 5px 16px;
-        background: #1a0a0a;
-        border: 1px solid #ff6666;
-        color: #ff6666;
-        cursor: pointer;
-        border-radius: 2px;
-        transition: background 0.15s;
-      }
-      .dict-modal-cancel:hover { background: #2a1010; }
-
-      .dict-btn-danger {
-        font-family: 'VT323', monospace;
-        font-size: 14px;
-        padding: 4px 10px;
-        background: #2a0a0a;
-        border: 1px solid #ff6666;
-        color: #ff6666;
-        cursor: pointer;
-        border-radius: 2px;
-        transition: background 0.15s;
-        flex-shrink: 0;
-      }
-      .dict-btn-danger:hover { background: #4a1010; box-shadow: 0 0 6px #ff666688; }
-
-      .dict-header-btn {
-        background: none;
+        font-weight: 600;
+        padding: 10px;
+        background: #38bdf8;
         border: none;
-        color: #00ccff;
-        font-size: 18px;
+        color: #fff;
         cursor: pointer;
-        opacity: 0.7;
-        transition: opacity 0.2s, transform 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 5px;
+        border-radius: 8px;
+        transition: opacity 0.2s;
       }
-      .dict-header-btn:hover { opacity: 1; transform: rotate(30deg); }
+      .dict-modal-save:hover { opacity: 0.85; }
+      .dict-modal-cancel {
+        flex: 1;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px;
+        background: #334155;
+        border: none;
+        color: #cbd5e1;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background 0.2s;
+      }
+      .dict-modal-cancel:hover { background: #475569; }
 
       .dict-select {
-        padding: 6px 8px;
-        background: #10102e;
-        border: 1px solid #2a2a55;
-        color: #e0e0f0;
-        font-family: 'VT323', monospace;
-        font-size: 15px;
-        border-radius: 2px;
+        padding: 8px 12px;
+        background: #0f172a;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #f1f5f9;
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        border-radius: 8px;
         outline: none;
         width: 100%;
         cursor: pointer;
       }
-      .dict-select:focus { border-color: #00ccff; }
+      .dict-select:focus { border-color: #38bdf8; }
 
-      /* ─── Responsive tweaks ─── */
+      /* ── Word Detail Panel ───────────────────────────── */
+      .dict-detail-panel {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border: 1px solid rgba(56,189,248,0.3);
+        border-radius: 10px;
+        margin: 4px 0 8px;
+        padding: 12px 14px;
+        animation: detailFadeIn 0.2s ease;
+        grid-column: 1 / -1; /* span all columns */
+        position: relative;
+      }
+      @keyframes detailFadeIn {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .dict-detail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .dict-detail-word {
+        font-family: 'Outfit', sans-serif;
+        font-size: 15px;
+        font-weight: 700;
+        color: #f8fafc;
+        letter-spacing: 0.3px;
+      }
+      .dict-detail-close {
+        background: transparent;
+        border: none;
+        color: #64748b;
+        font-size: 13px;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: color 0.2s;
+      }
+      .dict-detail-close:hover { color: #f87171; }
+      .dict-detail-body {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .dict-detail-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .dict-detail-flag { font-size: 14px; flex-shrink: 0; }
+      .dict-detail-text {
+        font-family: 'Inter', sans-serif;
+        font-size: 13px;
+      }
+      .dict-detail-text.primary {
+        color: #e2e8f0;
+        font-weight: 600;
+      }
+      .dict-detail-text.secondary {
+        color: #94a3b8;
+        font-weight: 400;
+      }
+      .dict-detail-example {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin-top: 6px;
+        padding: 7px 10px;
+        background: rgba(56,189,248,0.07);
+        border-left: 2px solid #38bdf8;
+        border-radius: 4px;
+      }
+      .dict-detail-example-label { font-size: 13px; flex-shrink: 0; }
+      .dict-detail-example-text {
+        font-family: 'Inter', sans-serif;
+        font-size: 12px;
+        color: #cbd5e1;
+        font-style: italic;
+        line-height: 1.45;
+      }
+      .dict-detail-cat {
+        display: inline-block;
+        font-family: 'Inter', sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #38bdf8;
+        background: rgba(56,189,248,0.1);
+        border-radius: 4px;
+        padding: 2px 7px;
+        margin-top: 4px;
+        align-self: flex-start;
+      }
+
+      /* Responsive */
       @media (max-width: 500px) {
-        #dict-header { padding: 4px 8px; gap: 6px; }
-        #dict-title { font-size: 8px; }
-        #dict-stats { font-size: 10px; }
-        #dict-form-section { padding: 4px 8px; }
-        #dict-toolbar { padding: 4px 8px; gap: 4px; }
-        .dict-sort-btn { font-size: 11px; padding: 2px 5px; }
-        .dict-file-btn { font-size: 11px; padding: 2px 5px; }
-        .dict-card { padding: 5px 6px; }
-        .dict-card-actions { gap: 1px; }
-        .dict-icon-btn { width: 22px; height: 20px; font-size: 12px; }
-        .dict-badge { font-size: 10px; }
+        #dict-header { padding: 8px 12px; gap: 8px; }
+        #dict-title { font-size: 14px; }
+        #dict-form-section { padding: 10px 12px; }
+        #dict-toolbar { padding: 7px 12px; gap: 8px; }
+        .dict-sort-btn { font-size: 10px; padding: 4px 8px; }
+        .dict-outline-btn { font-size: 11px; padding: 6px 10px; }
+        #dict-list { grid-template-columns: 1fr; }
       }
     `;
   }

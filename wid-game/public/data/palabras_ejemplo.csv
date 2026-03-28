@@ -1,0 +1,166 @@
+word,translation1,translation2,category,example
+Hallo,Hello,Hola,saludo,Hallo! Wie geht es Ihnen?
+Guten Morgen,Good morning,Buenos días,saludo,Guten Morgen! Haben Sie gut geschlafen?
+Guten Tag,Good day,Buenos días / Buenas tardes,saludo,Guten Tag! Was kann ich für Sie tun?
+Guten Abend,Good evening,Buenas noches,saludo,Guten Abend! Schön Sie zu sehen.
+Gute Nacht,Good night,Buenas noches,saludo,Gute Nacht! Schlaft gut.
+Auf Wiedersehen,Goodbye,Adiós,saludo,Auf Wiedersehen! Bis nächste Woche.
+Auf Wiederhören,Goodbye (phone),Adiós (por teléfono),saludo,Auf Wiederhören! Ich rufe Sie morgen an.
+Tschüss,Bye (informal),Adiós (informal),saludo,Tschüss! Bis morgen!
+Servus,Hi / Bye (Bavarian),Hola / Adiós (bávaro),saludo,Servus! Wie geht's?
+Danke,Thank you,Gracias,cortesía,Danke für Ihre Hilfe!
+Danke schön,Thank you very much,Muchas gracias,cortesía,Danke schön für das Geschenk!
+Bitte,Please / You're welcome,Por favor / De nada,cortesía,Bitte helfen Sie mir.
+Bitte schön,Here you go / You're welcome,De nada / Con mucho gusto,cortesía,Bitte schön! Gerne.
+Gerne,With pleasure,Con gusto,cortesía,Ich helfe Ihnen gerne.
+Entschuldigung,Excuse me / Sorry,Perdón / Disculpe,cortesía,Entschuldigung! Wo ist der Bahnhof?
+Entschuldigen Sie,Excuse me (formal),Disculpe (formal),cortesía,Entschuldigen Sie bitte. Ich habe nicht verstanden.
+Verzeihung,Pardon / Forgive me,Perdón / Disculpe,cortesía,Verzeihung! Das war mein Fehler.
+Ja,Yes,Sí,básico,Ja! Das stimmt.
+Nein,No,No,básico,Nein! Das ist falsch.
+Vielleicht,Maybe / Perhaps,Quizá / Tal vez,básico,Vielleicht komme ich morgen.
+Genau,Exactly / Right,Exacto / Correcto,comunicación,Genau! Du hast recht.
+Okay,Okay / Alright,De acuerdo,comunicación,Okay! Verstanden.
+Wie heißt du?,What is your name?,¿Cómo te llamas?,comunicación,Wie heißt du? Ich heiße Anna.
+Ich heiße...,My name is...,Me llamo...,comunicación,Ich heiße Thomas. Und du?
+Ich bin...,I am...,Soy...,comunicación,Ich bin aus Deutschland.
+Wie geht es Ihnen?,How are you? (formal),¿Cómo está usted?,comunicación,Wie geht es Ihnen heute?
+Wie geht es dir?,How are you?,¿Cómo estás?,comunicación,Wie geht es dir? Gut?
+Mir geht es gut,I am fine / I am well,Me va bien,comunicación,Mir geht es gut. Danke!
+Mir geht es nicht so gut,I'm not doing so well,No me va muy bien,comunicación,Mir geht es heute nicht so gut.
+Ich verstehe,I understand,Entiendo,comunicación,Ich verstehe das Problem.
+Ich verstehe nicht,I don't understand,No entiendo,comunicación,Entschuldigung. Ich verstehe nicht.
+Können Sie langsamer sprechen?,Can you speak more slowly?,¿Puede hablar más lentamente?,comunicación,Können Sie bitte langsamer sprechen?
+Können Sie das wiederholen?,Can you repeat that?,¿Puede repetir eso?,comunicación,Können Sie das bitte wiederholen?
+Was bedeutet das?,What does that mean?,¿Qué significa eso?,comunicación,Was bedeutet das Wort?
+Wie sagt man...?,How do you say...?,¿Cómo se dice...?,comunicación,Wie sagt man 'danke' auf Englisch?
+Sprechen Sie Englisch?,Do you speak English?,¿Habla inglés?,comunicación,Sprechen Sie Englisch, bitte?
+Ich spreche kein Deutsch,I don't speak German,No hablo alemán,comunicación,Ich spreche noch kein Deutsch.
+Ich lerne Deutsch,I am learning German,Estoy aprendiendo alemán,comunicación,Ich lerne Deutsch seit drei Monaten.
+Können Sie mir helfen?,Can you help me?,¿Puede ayudarme?,ayuda,Können Sie mir helfen, bitte?
+Wo ist...?,Where is...?,¿Dónde está...?,preguntas,Wo ist die nächste Apotheke?
+Wo ist die Toilette?,Where is the bathroom?,¿Dónde está el baño?,preguntas,Entschuldigung. Wo ist die Toilette?
+Wo ist der Bahnhof?,Where is the train station?,¿Dónde está la estación?,preguntas,Wo ist der Hauptbahnhof bitte?
+Wie komme ich zu...?,How do I get to...?,¿Cómo llego a...?,preguntas,Wie komme ich zum Rathaus?
+Wann?,When?,¿Cuándo?,preguntas,Wann beginnt das Spiel?
+Wie lange?,How long?,¿Cuánto tiempo?,preguntas,Wie lange dauert die Fahrt?
+Wie viel?,How much? (quantity),¿Cuánto?,preguntas,Wie viel kostet das?
+Wie viel Uhr?,What time is it?,¿Qué hora es?,preguntas,Wie viel Uhr ist es jetzt?
+Was ist das?,What is that?,¿Qué es eso?,preguntas,Was ist das für ein Tier?
+Wer ist das?,Who is that?,¿Quién es eso?,preguntas,Wer ist das auf dem Foto?
+Warum?,Why?,¿Por qué?,preguntas,Warum ist das Geschäft geschlossen?
+Null,Zero,Cero,números,Null Fehler gemacht!
+Eins,One,Uno,números,Eins plus eins gleich zwei.
+Zwei,Two,Dos,números,Ich habe zwei Katzen.
+Drei,Three,Tres,números,Wir brauchen drei Stühle.
+Vier,Four,Cuatro,números,Es gibt vier Jahreszeiten.
+Fünf,Five,Cinco,números,Ich habe fünf Geschwister.
+Sechs,Six,Seis,números,Das Paket kommt in sechs Tagen.
+Sieben,Seven,Siete,números,Die Woche hat sieben Tage.
+Acht,Eight,Ocho,números,Der Film dauert acht Stunden.
+Neun,Nine,Nueve,números,Neun von zehn Ärzten empfehlen das.
+Zehn,Ten,Diez,números,Ich habe zehn Euro.
+Montag,Monday,Lunes,tiempo,Am Montag habe ich einen Termin.
+Dienstag,Tuesday,Martes,tiempo,Dienstag ist mein Geburtstag.
+Mittwoch,Wednesday,Miércoles,tiempo,Mittwoch Abend gehe ich ins Kino.
+Donnerstag,Thursday,Jueves,tiempo,Donnerstag läuft ein guter Film.
+Freitag,Friday,Viernes,tiempo,Freitag ist fast Wochenende!
+Samstag,Saturday,Sábado,tiempo,Samstag schlafe ich lange.
+Sonntag,Sunday,Domingo,tiempo,Sonntag ist Ruhetag.
+Januar,January,Enero,tiempo,Im Januar ist es sehr kalt.
+Februar,February,Febrero,tiempo,Im Februar gibt es Karneval.
+März,March,Marzo,tiempo,Im März beginnt der Frühling.
+April,April,Abril,tiempo,April, April! Der macht was er will.
+Mai,May,Mayo,tiempo,Im Mai blühen die Blumen.
+Juni,June,Junio,tiempo,Im Juni ist es warm.
+Juli,July,Julio,tiempo,Im Juli fahren wir in Urlaub.
+August,August,Agosto,tiempo,Im August ist es sehr heiß.
+September,September,Septiembre,tiempo,Im September beginnt die Schule.
+Oktober,October,Octubre,tiempo,Im Oktober ist das Oktoberfest.
+November,November,Noviembre,tiempo,Im November ist es grau und kalt.
+Dezember,December,Diciembre,tiempo,Im Dezember feiern wir Weihnachten.
+Heute,Today,Hoy,tiempo,Heute ist Montag.
+Morgen,Tomorrow,Mañana,tiempo,Morgen fahre ich nach Berlin.
+Gestern,Yesterday,Ayer,tiempo,Gestern war das Wetter schön.
+Morgens,In the morning,Por la mañana,tiempo,Morgens trinke ich Kaffee.
+Nachmittags,In the afternoon,Por la tarde,tiempo,Nachmittags gehe ich spazieren.
+Abends,In the evening,Por la noche,tiempo,Abends schaue ich Fernsehen.
+Nachts,At night,De noche,tiempo,Nachts schlafe ich tief.
+Die Wohnung,The apartment,El apartamento,lugares,Meine Wohnung ist im dritten Stock.
+Das Haus,The house,La casa,lugares,Das Haus hat einen großen Garten.
+Der Bahnhof,The train station,La estación de tren,lugares,Der Bahnhof ist zehn Minuten entfernt.
+Die Bushaltestelle,The bus stop,La parada de autobús,lugares,Die Bushaltestelle ist um die Ecke.
+Die Straße,The street,La calle,lugares,Die Straße ist sehr breit.
+Der Platz,The square / The seat,La plaza / El asiento,lugares,Der Platz ist schön beleuchtet.
+Das Café,The café,La cafetería,lugares,Das Café öffnet um acht Uhr.
+Das Restaurant,The restaurant,El restaurante,lugares,Das Restaurant ist sehr teuer.
+Der Supermarkt,The supermarket,El supermercado,lugares,Der Supermarkt schließt um 20 Uhr.
+Die Apotheke,The pharmacy,La farmacia,lugares,Die Apotheke ist gegenüber dem Bahnhof.
+Der Arzt,The doctor,El médico,lugares,Ich brauche einen Termin beim Arzt.
+Das Krankenhaus,The hospital,El hospital,lugares,Das Krankenhaus ist das größte der Stadt.
+Die Schule,The school,La escuela,lugares,Die Schule beginnt um acht Uhr.
+Die Universität,The university,La universidad,lugares,An der Universität studiere ich Medizin.
+Die Kirche,The church,La iglesia,lugares,Die Kirche ist sehr alt.
+Die Moschee,The mosque,La mezquita,lugares,Die Moschee befindet sich in der Stadtmitte.
+Die Bibliothek,The library,La biblioteca,lugares,In der Bibliothek ist es still.
+Das Kino,The cinema / The movie theater,El cine,lugares,Im Kino läuft ein guter Film.
+Das Theater,The theater,El teatro,lugares,Das Theater hat heute eine Premiere.
+Der Pass,The passport,El pasaporte,trámites,Mein Pass ist noch gültig.
+Der Ausweis,The ID card,La cédula / El DNI,trámites,Zeigen Sie bitte Ihren Ausweis.
+Das Visum,The visa,La visa,trámites,Ich brauche ein Visum für die Reise.
+Die Anmeldung,The registration,El registro / El empadronamiento,trámites,Die Anmeldung muss innerhalb von zwei Wochen erfolgen.
+Die Abmeldung,The deregistration,El desempadronamiento,trámites,Nach dem Umzug müssen Sie die Abmeldung machen.
+Das Formular,The form,El formulario,trámites,Bitte füllen Sie das Formular aus.
+Die Unterschrift,The signature,La firma,trámites,Ihre Unterschrift fehlt noch.
+Der Stempel,The stamp / The seal,El sello,trámites,Der Stempel fehlt auf dem Dokument.
+Gehen,To go / To walk,Ir / Caminar,verbos,Ich gehe jeden Tag zur Arbeit.
+Kommen,To come,Venir / Llegar,verbos,Kommst du heute Abend?
+Bleiben,To stay / To remain,Quedarse,verbos,Ich bleibe bis Freitag hier.
+Sehen,To see / To watch,Ver,verbos,Ich sehe einen guten Film.
+Hören,To hear / To listen,Oír / Escuchar,verbos,Ich höre gerne Musik.
+Essen,To eat,Comer,verbos,Ich esse gerne Pizza.
+Trinken,To drink,Beber,verbos,Ich trinke jeden Morgen Kaffee.
+Schlafen,To sleep,Dormir,verbos,Ich schlafe acht Stunden pro Nacht.
+Arbeiten,To work,Trabajar,verbos,Ich arbeite von neun bis fünf.
+Spielen,To play,Jugar / Tocar,verbos,Die Kinder spielen im Garten.
+Lernen,To learn,Aprender,verbos,Ich lerne jeden Tag neue Wörter.
+Lesen,To read,Leer,verbos,Ich lese gerne Bücher.
+Schreiben,To write,Escribir,verbos,Ich schreibe einen Brief.
+Sprechen,To speak / To talk,Hablar,verbos,Ich spreche ein bisschen Deutsch.
+Fahren,To drive / To travel,Conducir / Viajar,verbos,Ich fahre mit dem Zug nach München.
+Fliegen,To fly,Volar,verbos,Das Flugzeug fliegt nach Berlin.
+Glücklich,Happy,Feliz,adjetivos,Ich bin sehr glücklich heute.
+Traurig,Sad,Triste,adjetivos,Sie ist traurig, weil ihr Hund krank ist.
+Froh,Glad / Happy,Contento,adjetivos,Ich bin froh, dass du hier bist.
+Zufrieden,Satisfied / Content,Satisfecho,adjetivos,Ich bin zufrieden mit meiner Arbeit.
+Müde,Tired,Cansado,adjetivos,Ich bin sehr müde heute.
+Wach,Awake,Despierto,adjetivos,Ich bin noch wach um Mitternacht.
+Schläfrig,Sleepy,Somnoliento,adjetivos,Ich bin schläfrig nach dem Essen.
+Schön,Beautiful / Nice,Bonito / Hermoso,adjetivos,Das Wetter ist heute schön.
+Hässlich,Ugly,Feo,adjetivos,Das alte Gebäude ist sehr hässlich.
+Groß,Big / Large / Tall,Grande / Alto,adjetivos,Der Turm ist sehr groß.
+Klein,Small / Little,Pequeño / Bajo,adjetivos,Die Wohnung ist ein bisschen klein.
+Lang,Long,Largo,adjetivos,Das Haar ist sehr lang.
+Kurz,Short,Corto,adjetivos,Der Film ist sehr kurz.
+Alt,Old,Viejo / Antiguo,adjetivos,Das Museum ist sehr alt.
+Neu,New,Nuevo,adjetivos,Ich habe ein neues Auto.
+Schnell,Fast / Quick,Rápido,adjetivos,Der Zug ist sehr schnell.
+Langsam,Slow,Lento,adjetivos,Die Schildkröte ist langsam.
+Warm,Warm,Caliente / Tibio,adjetivos,Das Wasser ist warm.
+Kalt,Cold,Frío,adjetivos,Im Winter ist es sehr kalt.
+Heiß,Hot,Muy caliente,adjetivos,Der Kaffee ist zu heiß.
+Das Brot,The bread,El pan,comida,Ich esse jeden Morgen Brot.
+Der Käse,The cheese,El queso,comida,Der Käse kommt aus der Schweiz.
+Die Milch,The milk,La leche,comida,Ich trinke jeden Tag Milch.
+Das Fleisch,The meat,La carne,comida,Ich esse wenig Fleisch.
+Der Fisch,The fish,El pescado,comida,Der Fisch ist heute sehr frisch.
+Das Gemüse,The vegetables,La verdura,comida,Ich esse viel Gemüse.
+Das Obst,The fruit,La fruta,comida,Im Sommer gibt es viel Obst.
+Der Apfel,The apple,La manzana,comida,Ein Apfel pro Tag hält den Arzt fern.
+Die Banane,The banana,El plátano / La banana,comida,Die Banane ist sehr reif.
+Das Ei,The egg,El huevo,comida,Ich esse jeden Morgen ein Ei.
+Der Kaffee,The coffee,El café,comida,Ich brauche morgens meinen Kaffee.
+Der Tee,The tea,El té,comida,Ich trinke lieber Tee als Kaffee.
+Das Wasser,The water,El agua,comida,Ein Glas Wasser bitte.
+Der Wein,The wine,El vino,comida,Der Wein kommt aus Frankreich.
+Das Bier,The beer,La cerveza,comida,Das Bier ist in Deutschland sehr beliebt.
