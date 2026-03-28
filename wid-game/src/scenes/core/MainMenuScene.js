@@ -22,8 +22,8 @@ const MENU_HOTSPOTS = Object.freeze([
         descriptionKey: 'menu_hotspot_play_desc',
         endpoint: '/story/roger-example',
         action: 'start',
-        frame: { x: 412, y: 396, w: 224, h: 244, rotation: -0.05 },
-        hit: { x: 412, y: 396, w: 286, h: 300 },
+        frame: { x: 430, y: 396, w: 276, h: 246, rotation: -0.08 },
+        hit: { x: 430, y: 396, w: 336, h: 304 },
     },
     {
         id: 'builder',
@@ -147,7 +147,7 @@ export class MainMenuScene extends Phaser.Scene {
         const bg = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 1);
         const vignette = this.add.ellipse(width / 2, height / 2, width * 0.82, height * 0.42, 0x0c1208, 0.18);
         const accent = this.add.rectangle(width / 2, height / 2 + 36, 180, 2, HOTSPOT_COLOR, 0.9);
-        const title = this.add.text(width / 2, height / 2 - 4, 'BOOTING RETRO STUDY OS', {
+        const title = this.add.text(width / 2, height / 2 - 4, 'ROGER WILLKOMMEN', {
             fontFamily: '"Press Start 2P"',
             fontSize: '11px',
             color: '#f5df91',
@@ -216,8 +216,8 @@ export class MainMenuScene extends Phaser.Scene {
     }
 
     _createHeaderPanel(width) {
-        const panelWidth = Math.min(470, width - 84);
-        const panelHeight = 154;
+        const panelWidth = Math.min(420, width - 84);
+        const panelHeight = 122;
         const container = this.add.container(42, 24);
         this._createPanelShell(container, panelWidth, panelHeight, {
             fillColor: 0x070a0f,
@@ -227,33 +227,31 @@ export class MainMenuScene extends Phaser.Scene {
             accentAlpha: 0.9,
             bottomAccentColor: 0x66778d,
         });
-        const bootText = this.add.text(18, 14, 'RETRO STUDY OS', {
-            fontFamily: 'VT323',
-            fontSize: '16px',
-            color: '#8f9db1',
-            letterSpacing: 1,
-        });
-        const titleA = this.add.text(18, 28, 'WILLKOMMEN', {
+        const titleA = this.add.text(18, 20, 'ROGER WILLKOMMEN', {
             fontFamily: '"Press Start 2P"',
-            fontSize: '17px',
+            fontSize: '12px',
             color: '#f7f0d1',
         });
-        const titleB = this.add.text(18, 56, 'IN DEUTSCHLAND', {
+        const titleB = this.add.text(18, 44, 'IN DEUTSCHLAND', {
             fontFamily: '"Press Start 2P"',
             fontSize: '10px',
             color: '#ffd76f',
         });
-        const subtitle = this.add.text(18, 82, i18n.t('menu_subtitle'), {
+        const subtitleEmoji = this.add.text(
+            18,
+            66,
+            '🚀',
+            {
+                fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif',
+                fontSize: '18px',
+                color: '#ffd76f',
+            },
+        );
+        const subtitle = this.add.text(42, 66, i18n.t('menu_subtitle'), {
             fontFamily: 'VT323',
-            fontSize: '21px',
+            fontSize: '18px',
             color: '#d8dee8',
-            wordWrap: { width: panelWidth - 160 },
-        });
-        const lore = this.add.text(18, 108, i18n.t('menu_lore'), {
-            fontFamily: 'VT323',
-            fontSize: '14px',
-            color: '#94a1b3',
-            wordWrap: { width: panelWidth - 160 },
+            wordWrap: { width: panelWidth - 206 },
         });
 
         const stats = [
@@ -262,10 +260,10 @@ export class MainMenuScene extends Phaser.Scene {
             { label: i18n.t('hud_words'), value: playerProgressStore.learnedWords?.length ?? 0 },
         ];
 
-        container.add([bootText, titleA, titleB, subtitle, lore]);
+        container.add([titleA, titleB, subtitle, subtitleEmoji]);
 
         stats.forEach((stat, index) => {
-            const chip = this._createStatusChip(panelWidth - 112, 18 + (index * 36), stat.label, stat.value);
+            const chip = this._createStatusChip(panelWidth - 108, 16 + (index * 30), stat.label, stat.value);
             container.add(chip);
         });
 

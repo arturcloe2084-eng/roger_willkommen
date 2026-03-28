@@ -30,9 +30,9 @@ export const LANGUAGES = {
 const STRINGS = {
     // ── Main Menu ────────────────────────
     menu_subtitle: {
-        de: 'Lerne Deutsch – erlebe es!',
-        en: 'Learn German by living it',
-        es: 'Aprende alemán viviendo para contarlo',
+        de: 'Lerne Deutsch mit Retro-Schubkraft.',
+        en: 'Learn German with retro propulsion.',
+        es: 'Aprende aleman con retropropulsion.',
         fr: 'Apprends l\'allemand en le vivant',
         pt: 'Aprenda alemão vivendo-o',
         it: 'Impara il tedesco vivendolo',
@@ -42,20 +42,6 @@ const STRINGS = {
         ar: 'تعلم الألمانية بعيشها',
         uk: 'Вивчай німецьку — переживи це!',
         ru: 'Учи немецкий — проживи это!',
-    },
-    menu_lore: {
-        de: '30 Tage · echte Bürokratie · echte Nachbarn · ein menschliches Rätsel',
-        en: '30 days · real paperwork · real neighbors · a human mystery',
-        es: '30 días · trámites reales · vecinos reales · misterio humano',
-        fr: '30 jours · vraie bureaucratie · vrais voisins · un mystère humain',
-        pt: '30 dias · burocracia real · vizinhos reais · um mistério humano',
-        it: '30 giorni · burocrazia vera · vicini veri · un mistero umano',
-        cs: '30 dnů · skutečná byrokracie · skuteční sousedé · lidská záhada',
-        pl: '30 dni · prawdziwa biurokracja · prawdziwi sąsiedzi · ludzka zagadka',
-        tr: '30 gün · gerçek bürokrasi · gerçek komşular · insani bir gizem',
-        ar: '30 يومًا · بيروقراطية حقيقية · جيران حقيقيون · لغز إنساني',
-        uk: '30 днів · справжня бюрократія · справжні сусіди · людська таємниця',
-        ru: '30 дней · реальная бюрократия · реальные соседи · человеческая загадка',
     },
     menu_start: {
         de: '[ SPACE / ENTER ] — STARTEN',
