@@ -120,7 +120,7 @@ export class BootScene extends Phaser.Scene {
             g.destroy();
         }
 
-        console.log('[BootScene] Ready. Starting MenuScene...');
-        this.scene.start(SCENE_KEYS.MAIN_MENU);
+        console.log('[BootScene] Ready. Starting ContractMenuScene...');
+        this.scene.start(SCENE_KEYS.CONTRACT_MENU);
     }
 }

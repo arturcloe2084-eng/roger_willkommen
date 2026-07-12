@@ -3,6 +3,10 @@
 export const SCENE_KEYS = Object.freeze({
     BOOT: 'BootScene',
     MAIN_MENU: 'MainMenuScene',
+    CONTRACT_MENU: 'ContractMenuScene',
+    PROFILE: 'ProfileScene',
+    PREPARATION: 'PreparationScene',
+    RESULTS: 'ResultsScene',
     SCENE_ENGINE: 'SceneEngineScene',
     DIALOG: 'DialogScene',
     CROSSWORD: 'CrosswordScene',

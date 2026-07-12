@@ -19,6 +19,8 @@ export class SceneEngineScene extends Phaser.Scene {
 
     init(data) {
         this.sceneId = data.sceneId || 'apartamento';
+        this.challengeMode = data.challengeMode || false;
+        this.consultasClientes = 0;
     }
 
     create() {
@@ -137,7 +139,38 @@ export class SceneEngineScene extends Phaser.Scene {
 
         // ═══ 5. HOTSPOTS ═══
         this.hotspotGraphics = [];
-        (this.sceneDef.hotspots || []).forEach((hs) => this.createHotspot(hs));
+        const hotspotsToCreate = [...(this.sceneDef.hotspots || [])];
+
+        // ─── Modo desafío: ocultar puerta a escalera, añadir clientes ────
+        if (this.challengeMode) {
+            // Filtrar puertas que lleven a escenas fuera del desafío
+            const filteredHotspots = hotspotsToCreate.filter(hs => {
+                if (hs.type === 'door' && hs.target && hs.target !== this.sceneId) {
+                    // En modo desafío, deshabilitar salida a escalera/calle/apartamento
+                    if (['escalera', 'calle', 'apartamento', 'oficina'].includes(hs.target)) {
+                        console.log(`[SceneEngine] Desafío: hotspot "${hs.id}" deshabilitado (target: ${hs.target})`);
+                        return false;
+                    }
+                }
+                return true;
+            });
+
+            // Añadir NPCs clientes de la sala de espera (3 clientes pasivos)
+            const clientNPCs = [
+                { id: 'cliente_1', type: 'dialog', x: 150, y: 300, width: 80, height: 60,
+                  label: 'Cliente 1', npc: { name: 'cliente_1', displayName: 'Herr Becker', personality: 'berlinés amable, espera turno' } },
+                { id: 'cliente_2', type: 'dialog', x: 400, y: 280, width: 70, height: 55,
+                  label: 'Cliente 2', npc: { name: 'cliente_2', displayName: 'Frau Schulz', personality: 'paciente, lee revista' } },
+                { id: 'cliente_3', type: 'dialog', x: 650, y: 320, width: 75, height: 50,
+                  label: 'Cliente 3', npc: { name: 'cliente_3', displayName: 'Herr Yilmaz', personality: 'habla algo de turco, intenta ayudar' } },
+            ];
+
+            // Reemplazar hotspots filtrados + añadir clientes
+            hotspotsToCreate.length = 0;
+            hotspotsToCreate.push(...filteredHotspots, ...clientNPCs);
+        }
+
+        hotspotsToCreate.forEach((hs) => this.createHotspot(hs));
         this._setupSceneBuilderShortcut();
 
         // ═══ 6. FADE IN ═══
@@ -226,6 +259,13 @@ export class SceneEngineScene extends Phaser.Scene {
 
         zone.on('pointerdown', () => {
             this.registerHotspotStory(hs);
+
+            // En modo desafío, contar consultas a clientes
+            if (this.challengeMode && hs.type === 'dialog' && hs.id?.startsWith('cliente_')) {
+                this.consultasClientes++;
+                console.log(`[SceneEngine] Consultas a clientes: ${this.consultasClientes}`);
+                this.game.events.emit('update-hud');
+            }
 
             switch (hs.type) {
                 case 'door':

@@ -37,7 +37,14 @@ export class GameHudScene extends Phaser.Scene {
             fill: '#88ddff'
         });
 
-        this.chapterText = this.add.text(10, 106, `${playerProgressStore.story.chapter}`, {
+        // ─── Indicador de consultas a clientes (modo desafío) ────────
+        this.helpText = this.add.text(10, 106, 'Ayudas: 0/4', {
+            fontFamily: 'VT323',
+            fontSize: '16px',
+            fill: '#ff9944'
+        }).setVisible(false);
+
+        this.chapterText = this.add.text(10, 124, `${playerProgressStore.story.chapter}`, {
             fontFamily: 'VT323',
             fontSize: '16px',
             fill: '#88aaff'
@@ -93,7 +100,19 @@ export class GameHudScene extends Phaser.Scene {
         this.levelText.setText(`${i18n.t('hud_lvl')}: ${playerProgressStore.level}`);
         this.xpText.setText(`XP: ${playerProgressStore.xp}/${playerProgressStore.xpToNextLevel}`);
         this.wordsText.setText(`${i18n.t('hud_words')}: ${playerProgressStore.learnedWords.length}`);
-        this.dayText.setText(`${i18n.t('hud_day')}: ${playerProgressStore.story.day}/30`);
+
+        // Detectar si estamos en modo desafío (SceneEngineScene con challengeMode)
+        const sceneEngine = this.scene.get(SCENE_KEYS.SCENE_ENGINE);
+        const isChallenge = sceneEngine?.challengeMode === true;
+        if (isChallenge) {
+            this.dayText.setText(`Contrato: día ${playerProgressStore.story.day}/30`);
+            this.helpText.setVisible(true);
+            this.helpText.setText(`Ayudas: ${Math.min(sceneEngine.consultasClientes || 0, 4)}/4`);
+        } else {
+            this.dayText.setText(`${i18n.t('hud_day')}: ${playerProgressStore.story.day}/30`);
+            this.helpText.setVisible(false);
+        }
+
         this.chapterText.setText(`${playerProgressStore.story.chapter}`);
         this.objectiveText.setText(`OBJ: ${playerProgressStore.story.activeObjective}`);
     }
@@ -114,7 +133,7 @@ export class GameHudScene extends Phaser.Scene {
             }
         });
 
-        // Volver al menú principal
-        this.scene.start(SCENE_KEYS.MAIN_MENU);
+        // Volver al menú de contrato
+        this.scene.start(SCENE_KEYS.CONTRACT_MENU);
     }
 }

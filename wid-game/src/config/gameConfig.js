@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { BootScene } from '../scenes/core/BootScene.js';
 import { MainMenuScene } from '../scenes/core/MainMenuScene.js';
+import { ContractMenuScene } from '../scenes/core/ContractMenuScene.js';
+import { ProfileScene } from '../scenes/core/ProfileScene.js';
+import { PreparationScene } from '../scenes/core/PreparationScene.js';
+import { ResultsScene } from '../scenes/core/ResultsScene.js';
 import { SceneEngineScene } from '../scenes/core/SceneEngineScene.js';
 import { GameHudScene } from '../scenes/core/GameHudScene.js';
 import { DictionaryScene } from '../scenes/core/DictionaryScene.js';
@@ -32,6 +36,10 @@ export function createGameConfig() {
         scene: [
             BootScene,
             MainMenuScene,
+            ContractMenuScene,
+            ProfileScene,
+            PreparationScene,
+            ResultsScene,
             DictionaryScene,
             SceneEngineScene,
             DialogScene,
