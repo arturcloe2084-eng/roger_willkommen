@@ -77,6 +77,10 @@ export class MainMenuScene extends Phaser.Scene {
         this._settingsOverlay = null;
     }
 
+    init(data) {
+        this._openSettingsOnStart = data?.openSettings || false;
+    }
+
     create() {
         const { width, height } = this.cameras.main;
         const menuBgKey = this.textures.exists('bg_main_menu_new') ? 'bg_main_menu_new' : 'bg_fallback_generic';
@@ -102,6 +106,10 @@ export class MainMenuScene extends Phaser.Scene {
         } else {
             this.cameras.main.fadeIn(450, 0, 0, 0);
             this._startMenuEntrance();
+        }
+
+        if (this._openSettingsOnStart) {
+            this.time.delayedCall(500, () => this._openSettings());
         }
     }
 

@@ -1,220 +1,229 @@
 /**
- * ContractMenuScene — Nuevo menú inicial del Entrenador de Fundas.
- * Reemplaza a MainMenuScene como pantalla de entrada del juego.
- *
- * Muestra:
- *   - Contrato activo: "Anmeldung 2026 — Bürgeramt Berlin"
- *   - Perfil resumido de la funda activa
- *   - 4 botones: [EMPEZAR DESAFÍO] [PREPARARME] [MI FUNDA] [⚙️]
- *   - Acceso secundario al menú clásico (escenas históricas)
- *
- * Especificación: PRODUCT_BRIEF.md, DESAFIO_ANMELDUNG_2026.md, PROMPT_RECONSTRUIR_GUI.md
+ * ContractMenuScene — Dashboard principal del Entrenador de Fundas.
+ * Layout estilo NEUROVITA: sidebar + panel de contrato + widgets de estado.
+ * Especificación: PRODUCT_BRIEF.md, PROMPT_RECONSTRUIR_GUI.md
  */
 import Phaser from 'phaser';
 import { SCENE_KEYS } from '../../config/sceneKeys.js';
 import { playerProgressStore } from '../../services/player/PlayerProgressStore.js';
-
-// ─── Colores del tema ────────────────────────────────────────────────────
-const C = Object.freeze({
-    bg: 0x0c1020,
-    panel: 0x111828,
-    panelStroke: 0x4a6080,
-    accent: 0xffd64f,
-    accentDim: 0xb89a30,
-    textTitle: '#f7f0d1',
-    textSub: '#c8d0de',
-    textDim: '#7a8494',
-    btnPlay: 0x1a5c2a,
-    btnPlayStroke: 0x44cc66,
-    btnPrep: 0x1a3050,
-    btnPrepStroke: 0x44aadd,
-    btnProfile: 0x3a2040,
-    btnProfileStroke: 0xaa66cc,
-    btnSettings: 0x1a1a28,
-    btnSettingsStroke: 0x667788,
-    btnClassic: 0x222222,
-    btnClassicStroke: 0x555555,
-});
+import { FundaShell, THEME } from '../../ui/FundaShell.js';
 
 export class ContractMenuScene extends Phaser.Scene {
     constructor() {
         super(SCENE_KEYS.CONTRACT_MENU);
     }
 
-    create() {
-        const { width, height } = this.cameras.main;
-        this.cameras.main.setBackgroundColor(C.bg);
-
-        // ─── Fondo decorativo ─────────────────────────────────────────
-        const bgDecor = this.add.graphics().setDepth(0);
-        bgDecor.fillStyle(0x0a0e18, 1);
-        bgDecor.fillRect(0, 0, width, height);
-        // Grid sutil
-        bgDecor.lineStyle(1, 0x1a2840, 0.15);
-        for (let x = 0; x < width; x += 40) {
-            bgDecor.moveTo(x, 0); bgDecor.lineTo(x, height);
-        }
-        for (let y = 0; y < height; y += 40) {
-            bgDecor.moveTo(0, y); bgDecor.lineTo(width, y);
-        }
-        // Línea de acento superior
-        bgDecor.fillStyle(C.accent, 0.9);
-        bgDecor.fillRect(width / 2 - 180, 8, 360, 3);
-
-        // ─── Título ───────────────────────────────────────────────────
-        this.add.text(width / 2, 40, 'ENTRENADOR DE FUNDAS', {
-            fontFamily: '"Press Start 2P"', fontSize: '14px', color: C.textTitle,
-        }).setOrigin(0.5).setDepth(10);
-
-        this.add.text(width / 2, 62, 'Sistema de Entrenamiento Cognitivo', {
-            fontFamily: 'VT323', fontSize: '20px', color: C.textDim,
-        }).setOrigin(0.5).setDepth(10);
-
-        // ─── Panel de contrato activo ─────────────────────────────────
-        const contractPanel = this.add.graphics().setDepth(5);
-        const cpx = 40, cpy = 95, cpw = width - 80, cph = 130;
-        contractPanel.fillStyle(C.panel, 0.9);
-        contractPanel.fillRoundedRect(cpx, cpy, cpw, cph, 10);
-        contractPanel.lineStyle(2, C.panelStroke, 0.7);
-        contractPanel.strokeRoundedRect(cpx, cpy, cpw, cph, 10);
-        // Acento superior del panel
-        contractPanel.fillStyle(C.accent, 0.85);
-        contractPanel.fillRect(cpx + 16, cpy + 10, cpw - 32, 2);
-
-        this.add.text(cpx + 20, cpy + 22, '📋 CONTRATO ACTIVO', {
-            fontFamily: '"Press Start 2P"', fontSize: '9px', color: C.accentDim,
-        }).setDepth(6);
-
-        this.add.text(cpx + 20, cpy + 46, 'Anmeldung 2026 — Bürgeramt Berlin', {
-            fontFamily: 'VT323', fontSize: '22px', color: '#ffffff',
-        }).setDepth(6);
-
-        this.add.text(cpx + 20, cpy + 74,
-            'Preparar una funda para completar el empadronamiento (Anmeldung)\n' +
-            'en un Bürgeramt alemán. Diálogo con empleados del registro.', {
-            fontFamily: 'VT323', fontSize: '16px', color: C.textSub,
-            lineSpacing: 4,
-        }).setDepth(6);
-
-        this.add.text(cpx + 20, cpy + 110, 'Día del contrato: 1/30  •  Estado: PENDIENTE', {
-            fontFamily: 'VT323', fontSize: '16px', color: '#88aaff',
-        }).setDepth(6);
-
-        // ─── Panel de funda resumida ──────────────────────────────────
-        const fundaPanel = this.add.graphics().setDepth(5);
-        const fpx = 40, fpy = 240, fpw = width - 80, fph = 60;
-        fundaPanel.fillStyle(C.panel, 0.85);
-        fundaPanel.fillRoundedRect(fpx, fpy, fpw, fph, 10);
-        fundaPanel.lineStyle(1, C.panelStroke, 0.5);
-        fundaPanel.strokeRoundedRect(fpx, fpy, fpw, fph, 10);
-
-        this.add.text(fpx + 16, fpy + 10, '👤 FUNDA ACTIVA', {
-            fontFamily: '"Press Start 2P"', fontSize: '8px', color: C.accentDim,
-        }).setDepth(6);
-
-        this.add.text(fpx + 16, fpy + 26,
-            'Vaclav S.  •  Alemán: A2+  •  Inglés: C1  •  Español: nativo  •  Nivel: ' +
-            (playerProgressStore.level || 1), {
-            fontFamily: 'VT323', fontSize: '18px', color: C.textSub,
-        }).setDepth(6);
-
-        this.add.text(fpx + 16, fpy + 44,
-            `Palabras: ${playerProgressStore.learnedWords?.length || 0}  •  XP: ${playerProgressStore.xp || 0}`, {
-            fontFamily: 'VT323', fontSize: '15px', color: C.textDim,
-        }).setDepth(6);
-
-        // ─── Botones principales ───────────────────────────────────────
-        const btnDefs = [
-            {
-                id: 'play', label: '▶ EMPEZAR DESAFÍO', x: 50, y: 320,
-                w: 320, h: 52, fill: C.btnPlay, stroke: C.btnPlayStroke,
-                scene: () => this.startChallenge(),
-            },
-            {
-                id: 'prep', label: '📋 PREPARARME', x: 390, y: 320,
-                w: 360, h: 52, fill: C.btnPrep, stroke: C.btnPrepStroke,
-                scene: () => this.scene.start(SCENE_KEYS.PREPARATION),
-            },
-            {
-                id: 'profile', label: '👤 MI FUNDA', x: 50, y: 386,
-                w: 320, h: 52, fill: C.btnProfile, stroke: C.btnProfileStroke,
-                scene: () => this.scene.start(SCENE_KEYS.PROFILE),
-            },
-            {
-                id: 'settings', label: '⚙️ CONFIGURACIÓN', x: 390, y: 386,
-                w: 360, h: 52, fill: C.btnSettings, stroke: C.btnSettingsStroke,
-                scene: () => {}, // TODO: pantalla de configuración futura
-            },
-        ];
-
-        for (const def of btnDefs) {
-            this._createButton(def);
-        }
-
-        // ─── Botón secundario: menú clásico ───────────────────────────
-        const classicBtn = this.add.graphics().setDepth(5);
-        classicBtn.fillStyle(C.btnClassic, 0.7);
-        classicBtn.fillRoundedRect(width - 170, height - 34, 150, 24, 6);
-        classicBtn.lineStyle(1, C.btnClassicStroke, 0.5);
-        classicBtn.strokeRoundedRect(width - 170, height - 34, 150, 24, 6);
-
-        const classicZone = this.add.zone(width - 95, height - 22, 150, 24)
-           .setInteractive({ useHandCursor: true }).setDepth(6);
-        classicZone.on('pointerdown', () => {
-            this.scene.start(SCENE_KEYS.MAIN_MENU);
-        });
-
-        this.add.text(width - 95, height - 22, 'Menú clásico ▸', {
-            fontFamily: 'VT323', fontSize: '14px', color: C.textDim,
-        }).setOrigin(0.5).setDepth(6);
-
-        // ─── Version ──────────────────────────────────────────────────
-        this.add.text(12, height - 18, 'v0.6.0-funda', {
-            fontFamily: 'VT323', fontSize: '14px', color: '#444455',
-        }).setDepth(6);
-
-        // ─── Fade in ──────────────────────────────────────────────────
-        this.cameras.main.fadeIn(400, 0, 0, 0);
+    init(data) {
+        this.view = data?.view || 'contract';
     }
 
-    _createButton(def) {
-        const g = this.add.graphics().setDepth(5);
-        g.fillStyle(def.fill, 0.85);
-        g.fillRoundedRect(def.x, def.y, def.w, def.h, 8);
-        g.lineStyle(2, def.stroke, 0.8);
-        g.strokeRoundedRect(def.x, def.y, def.w, def.h, 8);
+    create() {
+        this.cameras.main.setBackgroundColor(THEME.bg);
 
-        const zone = this.add.zone(
-            def.x + def.w / 2, def.y + def.h / 2, def.w, def.h
-        ).setInteractive({ useHandCursor: true }).setDepth(6);
+        const shell = new FundaShell(this, {
+            activeId: this.view === 'progress' ? 'progress' : 'contract',
+        });
+        const area = shell.build('Vaclav');
 
-        const label = this.add.text(def.x + def.w / 2, def.y + def.h / 2, def.label, {
-            fontFamily: 'VT323', fontSize: '22px', color: '#ffffff',
-        }).setOrigin(0.5).setDepth(7);
+        if (this.view === 'progress') {
+            this._buildProgressView(shell, area);
+        } else {
+            this._buildContractDashboard(shell, area);
+        }
+
+        this.cameras.main.fadeIn(400, 5, 10, 15);
+    }
+
+    _buildContractDashboard(shell, area) {
+        const { x, y, w, h } = area;
+        const cx = x + w / 2;
+        const compact = w < 720;
+
+        const contractW = compact ? w - 8 : Math.min(500, w - 40);
+        const contractH = compact ? 108 : 120;
+        const contractPanel = shell.createPanel(x + w / 2 - contractW / 2, y + (compact ? 8 : 20), contractW, contractH, 'PROGRAMA ACTIVO');
+        this.add.text(contractPanel.x, contractPanel.y,
+            'Anmeldung 2026 — Bürgeramt Berlin', {
+                fontFamily: THEME.fontBody,
+                fontSize: compact ? '15px' : '18px',
+                color: THEME.text,
+                wordWrap: { width: contractPanel.w },
+            }).setDepth(8);
+
+        this.add.text(contractPanel.x, contractPanel.y + 40, 'Nivel 1 / 3  •  Día 1/30', {
+            fontFamily: THEME.fontMono,
+            fontSize: compact ? '14px' : '16px',
+            color: THEME.textDim,
+        }).setDepth(8);
+
+        this.add.text(contractPanel.x, contractPanel.y + 70, 'Estado: PENDIENTE', {
+            fontFamily: THEME.fontMono,
+            fontSize: compact ? '14px' : '16px',
+            color: THEME.warning,
+        }).setDepth(8);
+
+        shell.drawProgressBar(contractPanel.x, contractPanel.y + 88, contractPanel.w, 10, 33);
+        this.add.text(contractPanel.x + contractPanel.w - 4, contractPanel.y + 82, '33%', {
+            fontFamily: THEME.fontMono,
+            fontSize: compact ? '12px' : '14px',
+            color: THEME.textCyan,
+        }).setOrigin(1, 0).setDepth(8);
+
+        const btnY = y + (compact ? 132 : h - 240);
+        const gap = compact ? 8 : 10;
+        const btnW = compact ? (w - 32) / 3 : 150;
+        const btnH = compact ? 38 : 44;
+        this._createActionButton(compact ? x + 16 + btnW / 2 : cx - 160, btnY, btnW, btnH, 'PREPARARME', () => {
+            this.scene.start(SCENE_KEYS.PREPARATION);
+        }, false, compact);
+        this._createActionButton(compact ? x + 16 + btnW * 1.5 + gap : cx, btnY, btnW, btnH, 'MI FUNDA', () => {
+            this.scene.start(SCENE_KEYS.PROFILE);
+        }, false, compact);
+        this._createActionButton(compact ? x + 16 + btnW * 2.5 + gap * 2 : cx + 160, btnY, btnW, btnH, '▶ DESAFÍO', () => {
+            this.startChallenge();
+        }, true, compact);
+
+        const widgetY = compact ? btnY + btnH + 16 : y + h - 180;
+        const widgetW = compact ? w - 8 : (w - 40) / 2;
+        const widgetH = compact ? Math.max(98, (h - (widgetY - y) - 8) / 2) : 140;
+
+        const w1 = shell.createPanel(compact ? x + 4 : x + 10, widgetY, compact ? widgetW : widgetW - 10, widgetH, 'TU PROGRESO');
+        const langs = ['DE A2+', 'EN C1', 'ES nativo'];
+        langs.forEach((lang, i) => {
+            this.add.text(w1.x, w1.y + i * 24, lang, {
+                fontFamily: THEME.fontMono,
+                fontSize: compact ? '15px' : '18px',
+                color: i === 0 ? THEME.textCyan : THEME.textDim,
+            }).setDepth(8);
+        });
+
+        this.add.text(w1.x + (compact ? 150 : 0), w1.y + (compact ? 0 : 60), `XP: ${playerProgressStore.xp || 0}`, {
+            fontFamily: THEME.fontMono,
+            fontSize: compact ? '17px' : '20px',
+            color: THEME.textCyan,
+        }).setDepth(8);
+
+        this.add.text(w1.x + (compact ? 150 : 0), w1.y + (compact ? 24 : 82), `Nivel: ${playerProgressStore.level || 1}`, {
+            fontFamily: THEME.fontMono,
+            fontSize: compact ? '16px' : '18px',
+            color: THEME.text,
+        }).setDepth(8);
+
+        const w2 = shell.createPanel(compact ? x + 4 : x + widgetW + 20, compact ? widgetY + widgetH + 10 : widgetY, compact ? widgetW : widgetW - 10, widgetH, 'LOGROS');
+        const achievements = [
+            { icon: '★', text: 'PRIMER PASO', sub: 'Contrato activo' },
+            { icon: '◇', text: 'VOCABULARIO', sub: `${playerProgressStore.learnedWords?.length || 0} palabras` },
+            { icon: '◎', text: 'NIVEL', sub: `Nv. ${playerProgressStore.level || 1}` },
+        ];
+        achievements.forEach((ach, i) => {
+            this.add.text(w2.x, w2.y + i * 36, `${ach.icon} ${ach.text}`, {
+                fontFamily: THEME.fontTitle,
+                fontSize: compact ? '12px' : '14px',
+                color: THEME.text,
+            }).setDepth(8);
+            this.add.text(w2.x + 20, w2.y + i * 36 + 16, ach.sub, {
+                fontFamily: THEME.fontBody,
+                fontSize: compact ? '11px' : '13px',
+                color: THEME.textMuted,
+            }).setDepth(8);
+        });
+    }
+
+    _buildProgressView(shell, area) {
+        const { x, y, w, h } = area;
+
+        const mainPanel = shell.createPanel(x + 8, y + 8, w - 16, h - 16, 'CENTRO DE PROGRESO');
+
+        const stats = [
+            ['Nivel', playerProgressStore.level || 1],
+            ['XP total', playerProgressStore.xp || 0],
+            ['XP siguiente nivel', playerProgressStore.xpToNextLevel || 100],
+            ['Palabras aprendidas', playerProgressStore.learnedWords?.length || 0],
+            ['Día del contrato', `${playerProgressStore.story?.day || 1}/30`],
+            ['Capítulo', playerProgressStore.story?.chapter || '—'],
+        ];
+
+        stats.forEach(([label, value], i) => {
+            const row = Math.floor(i / 2);
+            const col = i % 2;
+            const px = mainPanel.x + col * (mainPanel.w / 2);
+            const py = mainPanel.y + row * 60;
+
+            const card = shell.createPanel(px + 8, py, mainPanel.w / 2 - 16, 48, null);
+            this.add.text(card.x + 12, card.y + 8, label, {
+                fontFamily: THEME.fontBody,
+                fontSize: '14px',
+                color: THEME.textDim,
+            }).setDepth(8);
+
+            this.add.text(card.x + 12, card.y + 26, String(value), {
+                fontFamily: THEME.fontMono,
+                fontSize: '20px',
+                color: THEME.textCyan,
+            }).setDepth(8);
+        });
+
+        // Gráfico de actividad (línea decorativa)
+        const graphPanel = shell.createPanel(x + 8, y + h - 160, w - 16, 140, 'ACTIVIDAD — ÚLTIMOS 30 DÍAS');
+        const graphG = this.add.graphics().setDepth(8);
+        graphG.lineStyle(2, THEME.cyan, 0.7);
+        const gx = graphPanel.x + 12;
+        const gy = graphPanel.y + graphPanel.h - 12;
+        const gw = graphPanel.w - 24;
+        const gh = graphPanel.h - 36;
+
+        graphG.beginPath();
+        graphG.moveTo(gx, gy);
+        for (let i = 0; i <= 20; i++) {
+            const px = gx + (gw * i) / 20;
+            const py = gy - gh * (0.3 + 0.5 * Math.sin(i * 0.5) * Math.cos(i * 0.3));
+            graphG.lineTo(px, py);
+        }
+        graphG.strokePath();
+    }
+
+    _createActionButton(x, y, w, h, label, callback, primary = false, compact = false) {
+        const g = this.add.graphics().setDepth(8);
+        const fill = primary ? 0x0a2840 : 0x0a1520;
+        const stroke = primary ? THEME.cyan : THEME.border;
+
+        g.fillStyle(fill, 0.9);
+        g.fillRoundedRect(x - w / 2, y, w, h, 8);
+        g.lineStyle(1, stroke, primary ? 0.9 : 0.5);
+        g.strokeRoundedRect(x - w / 2, y, w, h, 8);
+
+        const zone = this.add.zone(x, y + h / 2, w, h)
+            .setInteractive({ useHandCursor: true }).setDepth(9);
+
+        const text = this.add.text(x, y + h / 2, label, {
+            fontFamily: THEME.fontTitle,
+            fontSize: compact ? '11px' : '16px',
+            color: primary ? THEME.textCyan : THEME.text,
+            fontStyle: 'bold',
+        }).setOrigin(0.5).setDepth(10);
 
         zone.on('pointerover', () => {
             g.clear();
-            g.fillStyle(def.fill, 1);
-            g.fillRoundedRect(def.x, def.y, def.w, def.h, 8);
-            g.lineStyle(2, def.stroke, 1);
-            g.strokeRoundedRect(def.x, def.y, def.w, def.h, 8);
-            label.setColor('#ffffcc');
+            g.fillStyle(0x0c3050, 1);
+            g.fillRoundedRect(x - w / 2, y, w, h, 8);
+            g.lineStyle(2, THEME.cyan, 1);
+            g.strokeRoundedRect(x - w / 2, y, w, h, 8);
+            text.setColor(THEME.textCyan);
         });
 
         zone.on('pointerout', () => {
             g.clear();
-            g.fillStyle(def.fill, 0.85);
-            g.fillRoundedRect(def.x, def.y, def.w, def.h, 8);
-            g.lineStyle(2, def.stroke, 0.8);
-            g.strokeRoundedRect(def.x, def.y, def.w, def.h, 8);
-            label.setColor('#ffffff');
+            g.fillStyle(fill, 0.9);
+            g.fillRoundedRect(x - w / 2, y, w, h, 8);
+            g.lineStyle(1, stroke, primary ? 0.9 : 0.5);
+            g.strokeRoundedRect(x - w / 2, y, w, h, 8);
+            text.setColor(primary ? THEME.textCyan : THEME.text);
         });
 
-        zone.on('pointerdown', () => def.scene());
+        zone.on('pointerdown', callback);
     }
 
     startChallenge() {
-        // Lanzar la escena del Bürgeramt con modo desafío activado
         this.scene.start(SCENE_KEYS.SCENE_ENGINE, {
             sceneId: 'amt',
             challengeMode: true,

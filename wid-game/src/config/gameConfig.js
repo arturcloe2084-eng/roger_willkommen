@@ -17,18 +17,18 @@ import { RogerExampleScene } from '../scenes/features/RogerExampleScene.js';
 export function createGameConfig() {
     return {
         type: Phaser.AUTO,
-        width: 800,
-        height: 500,
+        width: window.innerWidth,
+        height: window.innerHeight,
         parent: 'game-container',
         resolution: Math.min(window.devicePixelRatio || 1, 2),
         autoRound: false,
         scale: {
-            mode: Phaser.Scale.FIT,
+            mode: Phaser.Scale.RESIZE,
             autoCenter: Phaser.Scale.CENTER_BOTH,
         },
         pixelArt: false,
         antialias: true,
-        backgroundColor: '#0a0a1a',
+        backgroundColor: '#050a0f',
         physics: {
             default: 'arcade',
             arcade: { gravity: { y: 0 }, debug: false }
