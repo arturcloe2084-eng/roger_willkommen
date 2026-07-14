@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SceneSchema — Creador Universal de Escenas (CUE)",
+  "description": "Schema universal. Cualquier historia (Anmeldung, DHL, entrevista) se reduce a esto. El LLM planificador produce instancias de este schema; un validador determinista lo fuerza antes de compilar.",
+  "type": "object",
+  "required": ["meta", "entorno", "nodos_dialogo", "evaluacion"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["titulo", "idioma_principal"],
+      "properties": {
+        "titulo": { "type": "string", "minLength": 3 },
+        "idioma_principal": { "type": "string", "pattern": "^[a-z]{2}$", "description": "ISO 639-1, ej. de, en, es" },
+        "nivel_min_recomendado": { "type": "string", "pattern": "^(A1|A2|B1|B2|C1|C2)$" },
+        "licencia_requerida_para_crear": { "type": "string", "default": "creador_escenas" },
+        "autor": { "type": "string" }
+      }
+    },
+    "entorno": {
+      "type": "object",
+      "required": ["tipo_sala", "ambiente"],
+      "properties": {
+        "tipo_sala": { "type": "string", "enum": ["oficina_publica", "clinica", "comercio", "calle", "hogar", "otro"] },
+        "ambiente": { "type": "string", "description": "Frase para el LLM de imagen/vídeo" },
+        "objetos_interactivos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs que luego mapean a hotspots en Phaser"
+        }
+      }
+    },
+    "nodos_dialogo": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "rol"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z_]+$" },
+          "rol": { "type": "string", "enum": ["empleado_principal", "secundario_ayudante", "secundario_distractor", "recepcionista", "otro"] },
+          "puede_ayudar": { "type": "boolean", "default": false },
+          "personalidad": { "type": "string", "description": "Prompt de sistema del agente de lenguaje" },
+          "idioma": { "type": "string", "pattern": "^[a-z]{2}$" },
+          "entrada_inicial": { "type": "string" },
+          "ramas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["trigger", "respuesta"],
+              "properties": {
+                "trigger": { "type": "string", "description": "Intención detectada en el mensaje del jugador" },
+                "respuesta": { "type": "string" },
+                "siguiente": { "type": "string", "description": "id del nodo o null para cerrar" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "formulario": {
+      "type": "object",
+      "description": "Opcional. Si hay trámite escrito.",
+      "properties": {
+        "nombre": { "type": "string" },
+        "campos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "requerido"],
+            "properties": {
+              "id": { "type": "string" },
+              "requerido": { "type": "boolean" },
+              "del_perfil": { "type": "string", "description": "Clave del perfil de la funda que lo rellena automáticamente" },
+              "validacion": { "type": "string", "description": "Regla legible, ej. '≠ wohnort'" }
+            }
+          }
+        }
+      }
+    },
+    "evaluacion": {
+      "type": "object",
+      "required": ["criterios"],
+      "properties": {
+        "criterios": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["cumplimiento", "exactitud", "comprension", "expresion", "idioma", "autonomia", "recuperacion", "seguridad"] }
+        },
+        "puertas": {
+          "type": "object",
+          "properties": {
+            "cumplimiento_min": { "type": "integer", "minimum": 0, "maximum": 100 },
+            "exactitud_min": { "type": "integer", "minimum": 0, "maximum": 100 }
+          }
+        },
+        "objetivo_exito": { "type": "string" }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "properties": {
+        "estilo_visual": { "type": "string" },
+        "video_intro_segundos": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "imagenes_por_nodo": { "type": "boolean", "default": false }
+      }
+    }
+  }
+}

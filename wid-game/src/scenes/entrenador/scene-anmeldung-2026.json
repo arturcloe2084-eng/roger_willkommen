@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "titulo": "Anmeldung 2026 — Bürgeramt Berlin",
+    "idioma_principal": "de",
+    "nivel_min_recomendado": "A2",
+    "licencia_requerida_para_crear": "creador_escenas",
+    "autor": "estudio"
+  },
+  "entorno": {
+    "tipo_sala": "oficina_publica",
+    "ambiente": "fotorrealista, oficina gris berlinesa, fluorescentes fríos, mostrador de cristal, fila de espera, ventanilla 3",
+    "objetos_interactivos": ["mostrador", "formulario_meldeschein", "terminal", "sala_espera"]
+  },
+  "nodos_dialogo": [
+    {
+      "id": "recepcion",
+      "rol": "empleado_principal",
+      "puede_ayudar": false,
+      "personalidad": "Eres Frau Meier, empleada del Bürgeramt Berlin. Formal, eficiente, ligeramente apresurada. Hablas alemán nivel oficial (B1+). Pides el Meldeschein relleno y el pasaporte. Si la dirección es incorrecta, lo rechazas con cortesía pero firmeza.",
+      "idioma": "de",
+      "entrada_inicial": "Guten Tag. Haben Sie den Meldeschein ausgefüllt?",
+      "ramas": [
+        { "trigger": "saludo_formal", "respuesta": "Gut. Dann zeigen Sie mir bitte Ihren Pass.", "siguiente": "formulario" },
+        { "trigger": "no_tiene_formulario", "respuesta": "Ohne Meldeschein kann ich Sie nicht anmelden.", "siguiente": null },
+        { "trigger": "silencio", "respuesta": "Brauchen Sie Hilfe?", "siguiente": "ayuda_sugerida" }
+      ]
+    },
+    {
+      "id": "cliente_cola",
+      "rol": "secundario_ayudante",
+      "puede_ayudar": true,
+      "personalidad": "Eres un cliente en la sala de espera. Amable, alemán básico (A2). Te ofreces a explicar qué poner en el formulario si la funda lo pide. Puedes equivocarte a veces.",
+      "idioma": "de",
+      "entrada_inicial": "Soll ich Ihnen helfen? Die Adresse muss stimmen.",
+      "ramas": [
+        { "trigger": "pide_ayuda", "respuesta": "Geburtsort ist wo Sie geboren sind, Wohnort ist Berlin.", "siguiente": "recepcion" }
+      ]
+    },
+    {
+      "id": "marcus",
+      "rol": "secundario_ayudante",
+      "puede_ayudar": true,
+      "personalidad": "Eres Marcus, asesor de la Krankenkasse en la misma oficina. Apareces si la funda pregunta por seguro médico. Alemán claro, paciente.",
+      "idioma": "de",
+      "entrada_inicial": "Krankenversicherung? Ich kann kurz erklären.",
+      "ramas": [
+        { "trigger": "pregunta_seguro", "respuesta": "Eine Versicherung ist in Deutschland Pflicht.", "siguiente": "recepcion" }
+      ]
+    },
+    {
+      "id": "ayuda_sugerida",
+      "rol": "otro",
+      "puede_ayudar": false,
+      "personalidad": "Frau Meier vuelve a la carga.",
+      "idioma": "de",
+      "ramas": [
+        { "trigger": "pide_aclaracion", "respuesta": "Wie bitte? Noch einmal, langsam.", "siguiente": "formulario" }
+      ]
+    }
+  ],
+  "formulario": {
+    "nombre": "Meldeschein",
+    "campos": [
+      { "id": "vorname", "requerido": true, "del_perfil": "geburtsname" },
+      { "id": "familienname", "requerido": true, "del_perfil": "familienname" },
+      { "id": "geburtsdatum", "requerido": true, "del_perfil": "geburtsdatum" },
+      { "id": "geburtsort", "requerido": true, "del_perfil": "geburtsort" },
+      { "id": "strasse", "requerido": true, "del_perfil": "wohnung.strasse" },
+      { "id": "hausnummer", "requerido": true, "del_perfil": "wohnung.hausnummer" },
+      { "id": "postleitzahl", "requerido": true, "del_perfil": "wohnung.postleitzahl" },
+      { "id": "wohnort", "requerido": true, "del_perfil": "wohnung.ort", "validacion": "≠ geburtsort" },
+      { "id": "einzugdatum", "requerido": true, "del_perfil": "wohnung.einzug" }
+    ]
+  },
+  "evaluacion": {
+    "criterios": ["cumplimiento", "exactitud", "comprension", "expresion", "idioma", "autonomia", "recuperacion", "seguridad"],
+    "puertas": { "cumplimiento_min": 40, "exactitud_min": 40 },
+    "objetivo_exito": "Frau Meier entrega la Anmeldebestätigung (certificado de registro)"
+  },
+  "assets": {
+    "estilo_visual": "fotorrealista gris berlinés, iluminación fría de oficina",
+    "video_intro_segundos": 6,
+    "imagenes_por_nodo": true
+  }
+}
